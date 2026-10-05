@@ -39,8 +39,6 @@
       event.preventDefault();
       const submit = form.querySelector("button[type='submit']");
       const url = normalizeUrl(form.elements.url.value);
-      const slug = String(form.elements.slug.value || "").trim();
-      const title = String(form.elements.title.value || "").trim();
 
       result?.classList.remove("is-visible");
       setMessage("");
@@ -55,7 +53,7 @@
       status && (status.textContent = "Conectando ao Supabase");
 
       try {
-        const data = await request({ action: "create", url, slug, title });
+        const data = await request({ action: "create", url });
         resultLink.href = data.shortUrl;
         resultLink.textContent = data.shortUrl;
         result?.classList.add("is-visible");

@@ -14,6 +14,7 @@
     <meta property="og:description" content="Organize e compartilhe links curtos para atendimento, cardápios e campanhas.">
     <title>Urtador — encurtador de links em português</title>
     <link rel="stylesheet" href="assets/styles.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6464589391694014" crossorigin="anonymous"></script>
   </head>
   <body>
     <div class="shell">
@@ -30,13 +31,11 @@
             <p>Crie um endereço mais prático para enviar no WhatsApp, divulgar um produto, abrir uma página de atendimento ou acompanhar uma campanha.</p>
 
             <form class="panel" data-shortener-form>
-              <div class="field"><label for="url">Cole o endereço completo</label><input id="url" name="url" type="url" placeholder="https://seusite.com.br/pagina" autocomplete="url" required></div>
-              <div class="field"><label for="slug">Escolha o final do link <span>opcional</span></label><input id="slug" name="slug" type="text" placeholder="meu-produto" maxlength="48" pattern="[A-Za-z0-9_-]+" aria-describedby="slug-help"><small id="slug-help" class="field-help">Use letras, números, hífen ou sublinhado.</small></div>
-              <div class="field"><label for="title">Anotação para identificar o link <span>opcional</span></label><input id="title" name="title" type="text" placeholder="Campanha de outubro" maxlength="120"></div>
-              <div class="actions"><button class="button" type="submit">Criar link curto</button><button class="button secondary" type="button" data-copy>Copiar link</button></div>
+              <div class="field"><label for="url">Cole ou digite o link que deseja encurtar</label><input id="url" name="url" type="url" placeholder="https://seusite.com.br/pagina" autocomplete="url" required></div>
+              <div class="actions"><button class="button" type="submit">Gerar link curto</button></div>
               <p class="message" data-message aria-live="polite"></p>
             </form>
-            <div class="result" data-result><p>Seu link está pronto:</p><a class="short-url" href="#" target="_blank" rel="noreferrer" data-result-link></a></div>
+            <div class="result" data-result><p>Seu link está pronto:</p><a class="short-url" href="#" target="_blank" rel="noreferrer" data-result-link></a><div class="actions"><button class="button secondary" type="button" data-copy>Copiar link</button></div></div>
           </div>
 
           <aside class="stats" aria-label="Vantagens do Urtador">
