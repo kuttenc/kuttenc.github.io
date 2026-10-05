@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#075b57">
+    <meta name="description" content="Crie links curtos para compartilhar páginas de atendimento, cardápios, produtos e campanhas. Ferramenta simples em português para pequenos negócios.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://kuttenc.github.io/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="Urtador — links curtos para o seu negócio">
+    <meta property="og:description" content="Organize e compartilhe links curtos para atendimento, cardápios e campanhas.">
+    <title>Urtador — encurtador de links em português</title>
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Urtador, página inicial"><span class="mark">U</span><span>Urtador</span></a>
+        <nav class="site-nav" aria-label="Navegação principal"><a href="#como-usar">Como usar</a><a href="sobre.html">Sobre</a><a href="privacidade.html">Privacidade</a></nav>
+      </header>
+
+      <main>
+        <section class="layout" aria-labelledby="main-title">
+          <div class="hero">
+            <p class="eyebrow">Links simples para compartilhar</p>
+            <h1 id="main-title">Um link curto deixa o próximo passo mais fácil.</h1>
+            <p>Crie um endereço mais prático para enviar no WhatsApp, divulgar um produto, abrir uma página de atendimento ou acompanhar uma campanha.</p>
+
+            <form class="panel" data-shortener-form>
+              <div class="field"><label for="url">Cole o endereço completo</label><input id="url" name="url" type="url" placeholder="https://seusite.com.br/pagina" autocomplete="url" required></div>
+              <div class="field"><label for="slug">Escolha o final do link <span>opcional</span></label><input id="slug" name="slug" type="text" placeholder="meu-produto" maxlength="48" pattern="[A-Za-z0-9_-]+" aria-describedby="slug-help"><small id="slug-help" class="field-help">Use letras, números, hífen ou sublinhado.</small></div>
+              <div class="field"><label for="title">Anotação para identificar o link <span>opcional</span></label><input id="title" name="title" type="text" placeholder="Campanha de outubro" maxlength="120"></div>
+              <div class="actions"><button class="button" type="submit">Criar link curto</button><button class="button secondary" type="button" data-copy>Copiar link</button></div>
+              <p class="message" data-message aria-live="polite"></p>
+            </form>
+            <div class="result" data-result><p>Seu link está pronto:</p><a class="short-url" href="#" target="_blank" rel="noreferrer" data-result-link></a></div>
+          </div>
+
+          <aside class="stats" aria-label="Vantagens do Urtador">
+            <h2>Feito para compartilhar</h2>
+            <dl><div><dt>Atendimento</dt><dd>WhatsApp</dd></div><div><dt>Divulgação</dt><dd>Campanhas</dd></div><div><dt>Organização</dt><dd>Final personalizado</dd></div><div><dt>Acesso</dt><dd>Direto pelo navegador</dd></div></dl>
+            <p class="notice">Confira o endereço de destino antes de compartilhar. Links curtos levam a páginas externas.</p>
+          </aside>
+        </section>
+
+        <section id="como-usar" class="content-section" aria-labelledby="how-title">
+          <p class="eyebrow">Passo a passo</p><h2 id="how-title">Como criar e usar seu link</h2>
+          <div class="steps"><article><span class="step-number">1</span><h3>Cole o endereço</h3><p>Insira a página que deseja compartilhar. O endereço precisa começar com http:// ou https://.</p></article><article><span class="step-number">2</span><h3>Personalize se quiser</h3><p>Escolha um final fácil de reconhecer, como o nome de um produto, serviço ou campanha.</p></article><article><span class="step-number">3</span><h3>Copie e compartilhe</h3><p>Use o botão de cópia e envie o novo link em uma conversa, publicação ou material de divulgação.</p></article></div>
+        </section>
+
+        <section class="content-section two-columns" aria-labelledby="use-title">
+          <div><p class="eyebrow">Usos do dia a dia</p><h2 id="use-title">Um endereço curto, vários lugares para usar</h2><p>Compartilhe a página de um cardápio, um catálogo, um formulário de atendimento, uma oferta ou uma página de agendamento. O link continua levando ao endereço de destino que você informou.</p></div>
+          <div class="info-card"><h3>Antes de divulgar</h3><ul><li>Abra o endereço original e confira se está correto.</li><li>Não encurte links que contenham senhas ou dados pessoais.</li><li>Envie o link para si mesmo primeiro e teste a abertura.</li></ul></div>
+        </section>
+
+        <section class="content-section faq" aria-labelledby="faq-title">
+          <p class="eyebrow">Dúvidas comuns</p><h2 id="faq-title">Perguntas frequentes</h2>
+          <details><summary>O Urtador muda o conteúdo da página?</summary><p>Não. O link curto encaminha para o endereço que você colou. Confira o destino antes de compartilhar.</p></details>
+          <details><summary>Posso escolher o final do link?</summary><p>Sim. O final personalizado é opcional e só pode usar letras, números, hífen e sublinhado. Se já estiver em uso, escolha outro.</p></details>
+          <details><summary>O contador de acessos é uma auditoria?</summary><p>Não. A contagem é indicativa e pode incluir acessos automáticos de verificadores e robôs. Não use como comprovante financeiro ou prova de entrega.</p></details>
+          <details><summary>O Urtador controla o site de destino?</summary><p>Não. Páginas externas têm seus próprios responsáveis, regras e políticas de privacidade.</p></details>
+        </section>
+      </main>
+
+      <footer class="site-footer"><p>Urtador — ferramenta independente para criar e compartilhar links curtos.</p><nav aria-label="Links legais e suporte"><a href="sobre.html">Sobre</a><a href="privacidade.html">Política de privacidade</a><a href="termos.html">Termos de uso</a><a href="https://github.com/kuttenc/urtador/issues" target="_blank" rel="noopener noreferrer">Contato e suporte</a></nav><p class="footer-note">Use o serviço com responsabilidade. Não encurte nem divulgue links abusivos ou enganosos.</p></footer>
+    </div>
+    <script src="assets/config.js"></script>
+    <script src="assets/app.js"></script>
+  </body>
+</html>

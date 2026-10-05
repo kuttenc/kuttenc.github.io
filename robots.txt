@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kuttenc.github.io/sitemap.xml
