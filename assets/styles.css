@@ -31,6 +31,8 @@ input {
   font: inherit;
 }
 
+[hidden] { display: none !important; }
+
 .shell {
   width: min(1040px, calc(100% - 32px));
   margin: 0 auto;
@@ -151,6 +153,23 @@ input {
 
 .field-help { color: var(--muted); font-size: 13px; }
 
+.prelogin-link-form {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.prelogin-link-form h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.prelogin-link-form > .field-help {
+  display: block;
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+
 .field input {
   width: 100%;
   min-height: 48px;
@@ -246,6 +265,23 @@ input {
   font-size: 14px;
   line-height: 1.55;
 }
+
+.dashboard-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.dashboard-head h2,.dashboard-head h3 { margin:0; }
+.balance-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.balance-card { display:grid; gap:8px; padding:16px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+.balance-card span { color:var(--muted); font-size:13px; }
+.balance-card strong { font-size:clamp(18px,3vw,25px); }
+.dashboard-panel { margin-top:16px; }
+.dashboard-panel h3 { margin:0 0 12px; }
+.dashboard-panel h4 { margin:22px 0 10px; }
+.table-wrap { width:100%; overflow-x:auto; margin:12px 0; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+td a { color:var(--brand-strong); overflow-wrap:anywhere; }
+.button.small { min-height:34px; padding:0 10px; margin:2px; font-size:12px; }
+#short-link-result { display:block; margin-top:14px; }
 
 .result p { margin: 0 0 8px; color: var(--muted); }
 
@@ -355,6 +391,9 @@ input {
 
   .steps,
   .two-columns { grid-template-columns: 1fr; }
+
+  .balance-grid { grid-template-columns:1fr; }
+  .dashboard-head { align-items:flex-start; }
 
   .content-section { margin: 40px 0; padding: 22px; }
 
