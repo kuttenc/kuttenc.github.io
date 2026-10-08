@@ -6,15 +6,14 @@
     <meta name="theme-color" content="#07111f">
     <meta name="description" content="Crie links curtos para compartilhar páginas de atendimento, cardápios, produtos e campanhas. Ferramenta simples em português para pequenos negócios.">
     <meta name="robots" content="index,follow">
+    <meta name="google-adsense-account" content="ca-pub-6464589391694014">
     <link rel="canonical" href="https://kuttenc.github.io/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:title" content="Urtador — links curtos para o seu negócio">
     <meta property="og:description" content="Organize e compartilhe links curtos para atendimento, cardápios e campanhas.">
-    <meta name="google-adsense-account" content="ca-pub-6464589391694014">
     <title>Urtador — encurtador de links em português</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6464589391694014" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="assets/styles.css?v=20261005-admin-status">
+    <link rel="stylesheet" href="assets/styles.css?v=20261007-adsterra-stage">
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18495877040"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -27,7 +26,7 @@
     <div class="shell">
       <header class="topbar">
         <a class="brand" href="./" aria-label="Urtador, página inicial"><span class="mark">U</span><span>Urtador</span></a>
-        <nav class="site-nav" aria-label="Navegação principal"><a href="#auth-view">Entrar e encurtar</a><a href="#como-usar">Como usar</a><a href="sobre.html">Sobre</a><a href="privacidade.html">Privacidade</a></nav>
+        <nav class="site-nav" aria-label="Navegação principal"><a href="#como-usar">Como usar</a><a href="guia.html">Guia</a><a href="sobre.html">Sobre</a><a href="privacidade.html">Privacidade</a></nav>
       </header>
 
       <main>
@@ -38,30 +37,38 @@
               <h1 id="main-title">Crie links curtos e acompanhe sua divulgação.</h1>
               <p>Entre com seu telefone e senha. Na primeira entrada, confirme o WhatsApp e cadastre uma senha para facilitar os próximos acessos.</p>
             </div>
-            <section id="auth-view" class="panel" aria-label="Acesso e criação de link">
+            <section id="auth-view" class="panel" aria-label="Acesso por WhatsApp">
               <form id="password-login-form">
                 <div class="field"><label for="login-phone">Seu celular com DDD</label><input id="login-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
                 <div class="field"><label for="login-password">Sua senha</label><input id="login-password" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required></div>
                 <button class="button" type="submit">Entrar</button>
               </form>
               <button class="button secondary" type="button" id="first-access-button">Primeiro acesso: receber código</button>
+              <button class="button secondary" type="button" id="forgot-password-button">Esqueci minha senha</button>
+              <form id="password-recovery-form" hidden>
+                <p class="field-help">Informe o telefone cadastrado. Enviaremos um código de 6 dígitos para redefinir a senha.</p>
+                <div class="field"><label for="recovery-phone">Seu celular com DDD</label><input id="recovery-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+                <button class="button" type="submit">Enviar código de recuperação</button>
+                <button class="button secondary" type="button" id="recovery-back">Voltar ao login</button>
+              </form>
               <form id="otp-form" hidden>
                 <div class="field"><label for="otp">Código de 6 dígitos</label><input id="otp" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required></div>
                 <button class="button" type="submit">Confirmar código</button>
                 <button class="button secondary" type="button" id="change-phone">Voltar</button>
               </form>
               <form id="set-password-form" hidden>
-                <p class="field-help">WhatsApp confirmado. Crie sua senha para concluir o primeiro acesso.</p>
+                <p class="field-help" id="password-form-help">WhatsApp confirmado. Crie sua senha para concluir o primeiro acesso.</p>
                 <div class="field"><label for="new-password">Crie uma senha</label><input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" aria-describedby="password-help" required><small id="password-help" class="field-help">Use pelo menos 10 caracteres. Você usará essa senha nos próximos acessos.</small></div>
                 <div class="field"><label for="confirm-password">Confirme a senha</label><input id="confirm-password" name="password-confirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></div>
                 <button class="button" type="submit">Salvar senha</button>
               </form>
               <p class="message" id="auth-message" aria-live="polite"></p>
               <form id="prelogin-link-form" class="prelogin-link-form">
-                <h3>Já tem o endereço que quer encurtar?</h3>
-                <p class="field-help">Cole primeiro. Vamos guardar o endereço neste navegador enquanto você entra ou confirma seu WhatsApp.</p>
+                <h3>Encurte sem cadastro</h3>
+                <p class="field-help">Crie e compartilhe seu link agora. Se entrar depois neste mesmo navegador, o link será anexado à sua conta.</p>
                 <div class="field"><label for="pending-url">Endereço do link</label><input id="pending-url" name="url" type="url" inputmode="url" placeholder="https://exemplo.com/pagina" autocomplete="url" required></div>
-                <button class="button secondary" type="submit">Guardar e continuar</button>
+                <button class="button" type="submit">Encurtar link</button>
+                <div class="guest-link-output" id="guest-link-output" hidden><a id="guest-link-result" rel="noopener noreferrer"></a><button class="button secondary small" id="copy-guest-link" type="button">Copiar link</button></div>
                 <p class="message" id="draft-message" aria-live="polite"></p>
               </form>
               <small class="field-help">A sessão dura 3 horas. A senha vale por até 48 horas desde a última confirmação do WhatsApp; depois, pediremos senha e código novamente.</small>
@@ -105,7 +112,7 @@
                       <p class="message" id="link-message" aria-live="polite"></p>
                       <a id="short-link-result" class="short-url" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
                     </form>
-                    <section class="panel dashboard-panel"><h3>Seus links</h3><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Link</th><th>Visitas</th><th>Criado</th></tr></thead><tbody id="links-body"></tbody></table></div></section>
+                    <section class="panel dashboard-panel"><h3>Seus links</h3><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Link</th><th>Cliques únicos</th><th>Criado</th></tr></thead><tbody id="links-body"></tbody></table></div></section>
                   </section>
 
                   <section class="workspace-page" data-dashboard-area="earnings" hidden>
@@ -114,13 +121,14 @@
                       <article class="balance-card"><span>Saldo registrado</span><strong id="earnings-total">R$ 0,00</strong></article>
                       <article class="balance-card"><span>Disponível para solicitar</span><strong id="earnings-available">R$ 0,00</strong></article>
                     </div>
-                    <article class="earnings-note"><h3>Como ler estes números</h3><p>O contador e o saldo mostram os registros do Urtador conforme a regra vigente do serviço. A contagem não representa cliques em anúncios nem confirma receita do Google; o valor pode depender de validação e das regras de pagamento.</p></article>
+                      <article class="earnings-note"><h3>Como ler estes números</h3><p id="earnings-rate">Seu percentual e a estimativa por mil visitas aparecerão aqui.</p><p>O saldo conta uma abertura confirmada por visitante e colaborador por dia, depois do clique em “Abrir destino”. Visualizações, robôs, repetição no mesmo dia e seus próprios acessos não geram repasse. Isso não representa cliques em anúncios, CPM nem receita confirmada do Google; saques são conferidos manualmente.</p></article>
                   </section>
 
                   <section class="workspace-page" data-dashboard-area="payouts" hidden>
                     <div class="workspace-two-column">
-                      <section class="panel"><h3>Solicitar saque via Pix</h3><p class="field-help">Cadastre sua chave. Quando houver saldo disponível, envie a solicitação; o administrador confere e faz o pagamento manualmente.</p>
+                      <section class="panel"><h3>Solicitar saque via Pix</h3><p class="field-help">Ao acumular R$ 70,00 em visitas qualificadas reais, você libera saques. Cada pedido deve ser de no mínimo R$ 10,00, em múltiplos de R$ 10,00, com até 3 solicitações por dia. Um administrador confere e faz o Pix manualmente pela Cora; pedidos pendentes são avisados no grupo pelo final do telefone e valor.</p>
                         <form id="pix-form"><div class="field"><label for="pix-key">Sua chave Pix</label><input id="pix-key" name="pixKey" maxlength="120" autocomplete="off" placeholder="CPF, celular, e-mail ou chave aleatória" required></div><button class="button secondary" type="submit">Salvar chave Pix</button></form>
+                        <div class="field"><label for="withdrawal-amount">Valor do saque (R$)</label><input id="withdrawal-amount" type="number" min="10" step="10" value="10" inputmode="numeric"></div>
                         <button class="button" type="button" id="withdraw-button">Solicitar saque</button><p class="message" id="payout-message" aria-live="polite"></p>
                       </section>
                       <section class="panel"><h3>Histórico de saques</h3><div class="table-wrap"><table><thead><tr><th>Solicitado</th><th>Valor</th><th>Status</th></tr></thead><tbody id="withdrawals-body"></tbody></table></div></section>
@@ -145,13 +153,100 @@
                       <article class="balance-card"><span>Pix aguardando pagamento</span><strong id="admin-pending-pix">—</strong></article>
                       <article class="balance-card"><span>Pix já pagos</span><strong id="admin-paid-pix">—</strong></article>
                     </div>
-                    <h4>Atividade registrada — últimos 14 dias</h4>
+                    <div class="admin-section-controls" role="group" aria-label="Controles das seções do painel">
+                      <button id="admin-expand-all" class="button secondary small" type="button">Expandir tudo</button>
+                      <button id="admin-collapse-all" class="button secondary small" type="button">Recolher tudo</button>
+                    </div>
+                    <details class="admin-section">
+                      <summary><span>Atividade — últimos 14 dias</span><span class="admin-section-toggle">Abrir</span></summary>
                     <p class="field-help">Visitas e solicitações vêm dos registros do Supabase. “Pix em aberto” soma solicitações aguardando conferência ou pagamento; não é uma previsão de receita de anúncios.</p>
                     <div class="table-wrap"><table><thead><tr><th>Data</th><th>Visitas qualificadas</th><th>Solicitações Pix · total</th><th>Pix em aberto</th><th>Pix pagos</th></tr></thead><tbody id="admin-daily-body"></tbody></table></div>
-                    <h4>Solicitações Pix</h4><div class="table-wrap"><table><thead><tr><th>Telefone</th><th>Chave Pix</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="admin-withdrawals-body"></tbody></table></div>
-                    <h4>Usuários</h4><div class="table-wrap"><table><thead><tr><th>Telefone</th><th>Perfil</th><th>Chave Pix</th><th>Cadastro</th></tr></thead><tbody id="admin-users-body"></tbody></table></div>
-                    <h4>Links criados</h4><div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Link</th><th>Destino</th><th>Visitas totais</th></tr></thead><tbody id="admin-links-body"></tbody></table></div>
+                    </details>
+                    <details class="admin-section">
+                      <summary><span>Relatório de repasses</span><span class="admin-section-toggle">Abrir</span></summary>
+                    <p class="field-help">Consulte por dia, semana ou mês. “Repasse estimado” segue a regra interna registrada por visita; “Pix pagos” soma somente pagamentos marcados como realizados no painel. Isso não é receita real do Adsterra ou do AdSense.</p>
+                    <form id="admin-report-form" class="ad-config-form">
+                      <div class="ad-code-grid admin-report-filters">
+                        <label class="field"><span>De</span><input id="report-start" type="date" required></label>
+                        <label class="field"><span>Até</span><input id="report-end" type="date" required></label>
+                        <label class="field"><span>Agrupar por</span><select id="report-group"><option value="day">Dia</option><option value="week">Semana</option><option value="month">Mês</option></select></label>
+                        <label class="field"><span>Filtrar por telefone ou Pix</span><input id="report-person-filter" type="search" placeholder="Digite telefone ou chave Pix"></label>
+                      </div>
+                      <button class="button" type="submit">Gerar relatório</button>
+                      <button class="button secondary" id="export-admin-report" type="button" disabled>Baixar CSV</button>
+                      <button class="button secondary" id="print-admin-report" type="button" disabled>Exportar relatório PDF</button>
+                      <label class="field"><span>Gerador elegível (> R$ 70)</span><select id="report-eligible-person" disabled><option value="">Selecione uma pessoa</option></select></label>
+                      <button class="button secondary" id="print-eligible-reports" type="button" disabled>Exportar PDF individual</button>
+                      <button class="button secondary" id="test-mateus-report" type="button">Testar PDF · 995 visitas simuladas</button>
+                      <p id="admin-report-message" class="message" aria-live="polite"></p>
+                    </form>
+                    <p class="field-help">O teste de 995 visitas é apenas uma simulação identificada no PDF; não grava cliques, saldo ou repasse. Relatórios reais refletem os registros do sistema. Para conferência manual, valores acima de R$ 70 podem ser destacados no PDF.</p>
+                    <div class="balance-grid admin-summary-grid" id="admin-report-totals" hidden>
+                      <article class="balance-card"><span>Visitas qualificadas</span><strong id="report-visits">0</strong></article>
+                      <article class="balance-card"><span>Repasse estimado</span><strong id="report-estimated">R$ 0,00</strong></article>
+                      <article class="balance-card"><span>Pix pagos</span><strong id="report-paid">R$ 0,00</strong></article>
+                      <article class="balance-card"><span>Pix em aberto</span><strong id="report-open">R$ 0,00</strong></article>
+                    </div>
+                    <h4 id="admin-forecast-heading" hidden>Previsão de repasses</h4>
+                    <p class="field-help" id="admin-forecast-note" hidden></p>
+                    <div class="balance-grid admin-summary-grid" id="admin-forecast-totals" hidden>
+                      <article class="balance-card"><span>Saldo estimado ainda não pago</span><strong id="forecast-unpaid">R$ 0,00</strong></article>
+                      <article class="balance-card"><span>Reserva potencial em 7 dias</span><strong id="forecast-week">R$ 0,00</strong></article>
+                      <article class="balance-card"><span>Reserva potencial em 30 dias</span><strong id="forecast-month">R$ 0,00</strong></article>
+                    </div>
+                    <div class="table-wrap"><table><thead><tr><th>Período</th><th>Gerador</th><th>Visitas qualificadas</th><th>Repasse estimado</th><th>Pix pagos</th><th>Pix em aberto</th></tr></thead><tbody id="admin-report-body"></tbody></table></div>
+                    </details>
+                    <details class="admin-section" id="admin-withdrawals-section">
+                      <summary><span>Solicitações Pix — telefone, chave e valor</span><span class="admin-section-toggle">Abrir</span></summary>
+                      <p class="field-help">Fabio ou Matheus pode fazer o Pix manualmente. Use “Eu enviei o Pix” somente depois de confirmar a transferência na conta Cora. Isso registra o pagamento e avisa a comunidade; o botão não movimenta dinheiro.</p>
+                      <div class="table-wrap"><table><thead><tr><th>Telefone</th><th>Chave Pix</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead><tbody id="admin-withdrawals-body"></tbody></table></div>
+                    </details>
+                    <details class="admin-section" id="admin-payout-test-section">
+                      <summary><span>Modo teste — aviso de saque na comunidade</span><span class="admin-section-toggle">Abrir</span></summary>
+                      <p class="field-help"><strong>Simulação:</strong> envia uma mensagem identificada como TESTE para o grupo, sem solicitar saque, alterar saldo, gravar pagamento ou enviar Pix. Fabio e Matheus administradores podem usar.</p>
+                      <form id="admin-payout-test-form" class="ad-config-form">
+                        <div class="ad-code-grid admin-report-filters">
+                          <label class="field"><span>Conta de exemplo</span><select id="payout-test-person"><option value="mateus">Mateus · final 9929</option><option value="fabio">Fabio · final 6164</option></select></label>
+                          <label class="field"><span>Valor de exemplo</span><select id="payout-test-amount"><option value="1000">R$ 10,00</option><option value="7000">R$ 70,00</option></select></label>
+                        </div>
+                        <button class="button secondary" id="send-payout-test" type="submit">Enviar aviso TESTE ao grupo</button>
+                        <p id="payout-test-message" class="message" aria-live="polite"></p>
+                      </form>
+                    </details>
+                    <details class="admin-section">
+                      <summary><span>Valor-base interno por mil visitas</span><span class="admin-section-toggle">Abrir</span></summary>
+                    <p class="field-help">Este é o valor de repasse do Urtador para visitas qualificadas; não é o CPM nem a receita real de anúncios. A mudança vale para visitas futuras. Cada registro guarda o valor vigente na data.</p>
+                    <form id="reward-base-form" class="ad-config-form"><label class="field"><span>Valor-base (R$ por 1.000 visitas qualificadas)</span><input id="reward-base-value" type="number" min="0" max="500" step="0.01" required></label><button class="button" type="submit">Salvar valor-base</button><p id="reward-base-message" class="message" aria-live="polite"></p></form>
+                    </details>
+                    <details class="admin-section">
+                      <summary><span>Usuários e repasse</span><span class="admin-section-toggle">Abrir</span></summary>
+                      <p class="field-help">Ajuste o percentual do valor-base para cada conta. O valor estimado por mil visitas aparece junto ao campo; mudanças valem para visitas futuras.</p><div class="table-wrap admin-users-wrap"><table class="admin-users-table"><thead><tr><th>Conta</th><th>Repasse por 1.000 visitas</th><th>Ação</th></tr></thead><tbody id="admin-users-body"></tbody></table></div>
+                    </details>
+                    <details class="admin-section">
+                      <summary><span>Links criados</span><span class="admin-section-toggle">Abrir</span></summary>
+                      <div class="table-wrap"><table><thead><tr><th>Usuário</th><th>Link</th><th>Destino</th><th>Cliques únicos</th></tr></thead><tbody id="admin-links-body"></tbody></table></div>
+                    </details>
+                    <details class="admin-section">
+                      <summary><span>Publicidade em conteúdo</span><span class="admin-section-toggle">Abrir</span></summary>
+                    <p class="field-help">O Adsterra pode exibir banners rotativos na página Guia e na etapa 2/2 do redirecionamento. O anúncio aparece em uma área própria; abrir o destino não depende de ver ou clicar nele. O Google AdSense permanece em espera até a aprovação do site. Os campos de titular organizam os banners, não apuram receita real.</p>
+                    <p id="ad-owner-summary" class="field-help" aria-live="polite">A titularidade será resumida aqui após carregar os anúncios salvos.</p>
+                    <form id="ad-config-form" class="ad-config-form">
+                      <label class="ad-config-toggle"><input id="adsense-primary" type="checkbox"> Google AdSense (desativado no site enquanto aguarda aprovação)</label>
+                      <label class="field"><span>Título do Google AdSense</span><input id="adsense-title" type="text" maxlength="80" placeholder="Ex.: Auto ads — Guia Urtador"></label>
+                      <div class="ad-code-grid">
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 1</span><input id="banner-title-1" type="text" maxlength="80" placeholder="Ex.: Banner Guia 1"></label><label class="field"><span>Titular</span><select id="banner-owner-1"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-1" rows="5" placeholder="Cole o código oficial do Publisher"></textarea></label><button class="button secondary small" data-banner-preview="1" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="1" aria-live="polite"></div></div>
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 2</span><input id="banner-title-2" type="text" maxlength="80" placeholder="Opcional"></label><label class="field"><span>Titular</span><select id="banner-owner-2"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-2" rows="5" placeholder="Opcional"></textarea></label><button class="button secondary small" data-banner-preview="2" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="2" aria-live="polite"></div></div>
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 3</span><input id="banner-title-3" type="text" maxlength="80" placeholder="Opcional"></label><label class="field"><span>Titular</span><select id="banner-owner-3"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-3" rows="5" placeholder="Opcional"></textarea></label><button class="button secondary small" data-banner-preview="3" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="3" aria-live="polite"></div></div>
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 4</span><input id="banner-title-4" type="text" maxlength="80" placeholder="Opcional"></label><label class="field"><span>Titular</span><select id="banner-owner-4"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-4" rows="5" placeholder="Opcional"></textarea></label><button class="button secondary small" data-banner-preview="4" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="4" aria-live="polite"></div></div>
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 5</span><input id="banner-title-5" type="text" maxlength="80" placeholder="Opcional"></label><label class="field"><span>Titular</span><select id="banner-owner-5"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-5" rows="5" placeholder="Opcional"></textarea></label><button class="button secondary small" data-banner-preview="5" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="5" aria-live="polite"></div></div>
+                        <div class="ad-code-card"><label class="field"><span>Fornecedor</span><input type="text" value="Adsterra" readonly></label><label class="field"><span>Título do anúncio 6</span><input id="banner-title-6" type="text" maxlength="80" placeholder="Opcional"></label><label class="field"><span>Titular</span><select id="banner-owner-6"><option value="">Selecione</option><option value="owner">Fabio</option><option value="mateus">Matheus</option></select></label><label class="field"><span>Código do banner</span><textarea id="banner-code-6" rows="5" placeholder="Opcional"></textarea></label><button class="button secondary small" data-banner-preview="6" type="button">Pré-visualizar</button><div class="banner-preview" data-banner-preview-frame="6" aria-live="polite"></div></div>
+                      </div>
+                      <p class="field-help">A prévia mostra somente o espaço e as dimensões e não carrega o anúncio. Se ainda não houver banner salvo, o primeiro campo vem preenchido com o código Adsterra Beta do Fabio; confira e salve para ativá-lo na página Guia. A configuração do Google AdSense fica guardada, mas o script está desligado no site até a aprovação e uma nova atualização.</p>
+                      <button class="button" type="submit">Salvar anúncios</button>
+                      <p id="ad-config-message" class="message" aria-live="polite"></p>
+                    </form>
                     <p class="notice">A contagem é do próprio serviço e não é uma auditoria de anúncios nem garantia de monetização. Pagamentos são conferidos e processados manualmente.</p>
+                    </details>
                   </section>
                 </div>
               </div>
@@ -182,9 +277,9 @@
         </section>
       </main>
 
-      <footer class="site-footer"><p>Urtador — ferramenta independente para criar e compartilhar links curtos.</p><nav aria-label="Links legais e suporte"><a href="sobre.html">Sobre</a><a href="privacidade.html">Política de privacidade</a><a href="termos.html">Termos de uso</a><a href="https://github.com/kuttenc/urtador/issues" target="_blank" rel="noopener noreferrer">Contato e suporte</a></nav><p class="footer-note">Use o serviço com responsabilidade. Não encurte nem divulgue links abusivos ou enganosos.</p></footer>
+      <footer class="site-footer"><p>Urtador — ferramenta independente para criar e compartilhar links curtos.</p><nav aria-label="Links legais e suporte"><a href="guia.html">Guia</a><a href="sobre.html">Sobre</a><a href="privacidade.html">Política de privacidade</a><a href="termos.html">Termos de uso</a><a href="https://github.com/kuttenc/urtador/issues" target="_blank" rel="noopener noreferrer">Contato e suporte</a></nav><p class="footer-note">Use o serviço com responsabilidade. Não encurte nem divulgue links abusivos ou enganosos.</p></footer>
     </div>
     <script src="assets/config.js?v=20261005-session-draft"></script>
-    <script src="assets/app.js?v=20261005-admin-status"></script>
+    <script src="assets/app.js?v=20261007-payout-test-mode"></script>
   </body>
 </html>

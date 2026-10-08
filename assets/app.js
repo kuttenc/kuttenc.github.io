@@ -6,12 +6,32 @@
     token: storage.getItem("urtador-token") || "",
     phone: storage.getItem("urtador-phone") || "",
     passwordSetupRequired: storage.getItem("urtador-password-setup") === "1",
+    passwordRecovery: storage.getItem("urtador-password-recovery") === "1",
     resumingDraft: false,
+    guestClaimedToken: "",
+    adminReportRows: [],
+    adminUsers: [],
+    adminReport: null,
+    rewardBaseCents: 7000,
     user: null,
     data: null,
     activeDashboardPage: ""
   };
+  const starterAdsterraBanner = {
+    title: "Adsterra Beta 300x250",
+    owner: "owner",
+    script: `<script>\n  atOptions = {\n    'key' : '02033b78716daab542298321e0a8d3a6',\n    'format' : 'iframe',\n    'height' : 250,\n    'width' : 300,\n    'params' : {}\n  };\n</script>\n<script src="https://bauval.org/22/02033b78716daab542298321e0a8d3a6"></script>`
+  };
   const el = (id) => document.getElementById(id);
+
+  function guestSessionId() {
+    let id = storage.getItem("urtador-guest-session");
+    if (!id) {
+      id = crypto.randomUUID();
+      storage.setItem("urtador-guest-session", id);
+    }
+    return id;
+  }
 
   function say(node, text, error = false) {
     if (!node) return;
@@ -66,6 +86,54 @@
     return a;
   }
 
+  function parseAdPreview(source) {
+    const text = String(source || "");
+    const key = text.match(/['"]key['"]\s*:\s*['"]([a-f0-9]{32})['"]/i)?.[1]?.toLowerCase();
+    const width = Number(text.match(/['"]width['"]\s*:\s*(\d{2,4})/i)?.[1]);
+    const height = Number(text.match(/['"]height['"]\s*:\s*(\d{2,4})/i)?.[1]);
+    const sourceUrl = text.match(/<script\b[^>]*\bsrc\s*=\s*['"](https:\/\/[^'"]+)['"]/i)?.[1];
+    if (!key || !sourceUrl || !Number.isInteger(width) || !Number.isInteger(height) || width < 120 || width > 728 || height < 50 || height > 600) {
+      throw new Error("Cole o código completo do banner gerado no painel Publisher.");
+    }
+    const parsed = new URL(sourceUrl);
+    const host = parsed.hostname.toLowerCase();
+    const validPath = host === "bauval.org"
+      ? parsed.pathname.toLowerCase() === `/22/${key}`
+      : new Set(["www.highperformanceformat.com", "highperformanceformat.com"]).has(host) && parsed.pathname.toLowerCase() === `/${key}/invoke.js`;
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port || parsed.search || parsed.hash || !validPath) {
+      throw new Error("Este código usa um endereço de script não permitido. Cole o snippet oficial validado pelo painel.");
+    }
+    return { key, width, height, host, scriptPath: parsed.pathname };
+  }
+
+  function showAdPreview(index) {
+    const preview = document.querySelector(`[data-banner-preview-frame="${index}"]`);
+    if (!preview) return;
+    try {
+      const banner = parseAdPreview(el(`banner-code-${index}`).value);
+      const mock = document.createElement("div");
+      mock.className = "banner-preview-mock";
+      mock.setAttribute("role", "img");
+      mock.setAttribute("aria-label", `Espaço de anúncio ${banner.width} por ${banner.height} pixels`);
+      mock.style.aspectRatio = `${banner.width} / ${banner.height}`;
+      mock.style.width = `min(100%, ${Math.min(banner.width, 560)}px)`;
+      const title = document.createElement("strong");
+      title.textContent = el(`banner-title-${index}`).value.trim() || `Banner ${index}`;
+      const size = document.createElement("span");
+      size.textContent = `${banner.width} × ${banner.height} px`;
+      mock.replaceChildren(title, size);
+      const note = document.createElement("p");
+      note.className = "field-help";
+      note.textContent = "Prévia do espaço e dimensões. O script não é executado aqui, evitando gerar uma impressão de teste.";
+      preview.replaceChildren(note, mock);
+    } catch (error) {
+      const message = document.createElement("p");
+      message.className = "message error";
+      message.textContent = error.message;
+      preview.replaceChildren(message);
+    }
+  }
+
   function setLoggedIn(on) {
     el("auth-view").hidden = on;
     el("dashboard-view").hidden = !on;
@@ -89,6 +157,8 @@
   function showAuth(mode) {
     el("password-login-form").hidden = mode !== "password";
     el("first-access-button").hidden = mode !== "password";
+    el("forgot-password-button").hidden = mode !== "password";
+    el("password-recovery-form").hidden = mode !== "recovery";
     el("otp-form").hidden = mode !== "otp";
     el("set-password-form").hidden = mode !== "set-password";
   }
@@ -102,7 +172,17 @@
   }
 
   async function refreshDashboard() {
-    const data = await api("me");
+    let data = await api("me");
+    if (state.guestClaimedToken !== state.token) {
+      try {
+        const claim = await api("claim-guest-links", { guestSessionId: guestSessionId() });
+        state.guestClaimedToken = state.token;
+        storage.setItem("urtador-guest-session", crypto.randomUUID());
+        if (claim.claimedCount > 0) data = await api("me");
+      } catch {
+        // O painel continua acessível; uma próxima atualização tentará anexar os links novamente.
+      }
+    }
     state.data = data;
     state.user = data.user;
     setLoggedIn(true);
@@ -119,6 +199,18 @@
     el("earnings-visits").textContent = Number(data.eligibleVisits || 0).toLocaleString("pt-BR");
     el("earnings-total").textContent = money(data.earnedCents);
     el("earnings-available").textContent = money(data.availableCents);
+    const maxWithdrawal = Math.floor(Number(data.availableCents || 0) / 1000) * 10;
+    const withdrawalAmount = el("withdrawal-amount");
+    if (maxWithdrawal >= 10) {
+      withdrawalAmount.max = String(maxWithdrawal);
+      if (Number(withdrawalAmount.value) > maxWithdrawal) withdrawalAmount.value = String(maxWithdrawal);
+    } else {
+      withdrawalAmount.removeAttribute("max");
+    }
+    el("withdraw-button").disabled = Number(data.earnedCents || 0) < 7000 || maxWithdrawal < 10;
+    const payoutPercent = Number(data.user.payoutPercent ?? 100);
+    const rewardBaseCents = Number(data.rewardBaseCents ?? 7000);
+    el("earnings-rate").textContent = `Seu repasse está em ${payoutPercent.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor-base: ${money(Math.round(rewardBaseCents * payoutPercent / 100))} por mil visitas qualificadas futuras.`;
     el("pix-key").value = data.user.pixKey || "";
     const linksBody = el("links-body");
     linksBody.replaceChildren();
@@ -126,7 +218,7 @@
       const row = document.createElement("tr");
       cell(row, link.title || link.slug);
       const linkCell = document.createElement("td"); linkCell.append(safeLink(`${config.defaultDomain}/${link.slug}`, `${config.defaultDomain}/${link.slug}`)); row.append(linkCell);
-      cell(row, Number(link.click_count || 0).toLocaleString("pt-BR"));
+      cell(row, Number(link.qualified_click_count || 0).toLocaleString("pt-BR"));
       cell(row, date(link.created_at));
       linksBody.append(row);
     }
@@ -171,6 +263,8 @@
       return;
     }
     const summary = data.summary || {};
+    state.adminUsers = data.users || [];
+    state.rewardBaseCents = Number(data.adConfiguration?.rewardBaseCents ?? 7000);
     el("admin-user-count").textContent = Number(summary.userCount || 0).toLocaleString("pt-BR");
     el("admin-link-count").textContent = Number(summary.linkCount || 0).toLocaleString("pt-BR");
     el("admin-qualified-visits").textContent = Number(summary.qualifiedVisits || 0).toLocaleString("pt-BR");
@@ -186,19 +280,33 @@
       dailyBody.append(row);
     }
     const withdrawalsBody = el("admin-withdrawals-body"); withdrawalsBody.replaceChildren();
+    const pendingWithdrawalCount = (data.withdrawals || []).filter((item) => item.status === "pending" || item.status === "approved").length;
+    el("admin-withdrawals-section").open = pendingWithdrawalCount > 0;
     for (const item of data.withdrawals || []) {
       const row = document.createElement("tr");
       const user = Array.isArray(item.user) ? item.user[0] : item.user;
-      cell(row, user?.phone || "—"); cell(row, item.pix_key); cell(row, money(item.amount_cents)); cell(row, item.status);
+      cell(row, user?.phone || "—");
+      const pixCell = cell(row, item.pix_key);
+      if (item.pix_key) {
+        const copyPix = document.createElement("button"); copyPix.className = "button small secondary"; copyPix.type = "button"; copyPix.textContent = "Copiar chave";
+        copyPix.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(item.pix_key); say(el("admin-load-message"), `Chave Pix do telefone final ${String(user?.phone || "").slice(-4)} copiada.`); }
+          catch { say(el("admin-load-message"), "Não foi possível copiar a chave Pix neste navegador.", true); }
+        });
+        pixCell.append(document.createTextNode(" "), copyPix);
+      }
+      cell(row, money(item.amount_cents)); cell(row, item.status === "pending" ? "Solicitado · aguardando pagamento" : item.status === "approved" ? "Aprovado · aguardando Pix" : item.status === "paid" ? "Pago" : "Recusado");
       const actions = document.createElement("td");
       if (item.status === "pending" || item.status === "approved") {
         const action = document.createElement("button"); action.className = "button small"; action.type = "button";
-        action.textContent = item.status === "pending" ? "Aprovar" : "Marcar pago";
+        action.textContent = "Eu enviei o Pix";
         action.addEventListener("click", async () => {
-          const nextStatus = item.status === "pending" ? "approved" : "paid";
-          const prompt = nextStatus === "paid" ? `Confirma que fez o Pix de ${money(item.amount_cents)} para ${item.pix_key}?` : `Aprovar o saque de ${money(item.amount_cents)} para ${item.pix_key}?`;
-          if (!window.confirm(prompt)) return;
-          await api("admin-withdrawal", { withdrawalId: item.id, status: nextStatus }); await refreshDashboard();
+          if (!window.confirm(`Confirma que o Pix de ${money(item.amount_cents)} foi realmente enviado para a chave ${item.pix_key}? Isso marcará o pedido como pago e avisará a comunidade.`)) return;
+          try {
+            const result = await api("admin-withdrawal", { withdrawalId: item.id, status: "paid" });
+            await refreshDashboard();
+            say(el("admin-load-message"), result.notificationSent ? "Pix registrado como pago. Aviso enviado à comunidade." : "Pix registrado como pago, mas o aviso à comunidade não foi enviado.", !result.notificationSent);
+          } catch (error) { say(el("admin-load-message"), error.message, true); }
         });
         const reject = document.createElement("button"); reject.className = "button small secondary"; reject.type = "button"; reject.textContent = "Recusar";
         reject.addEventListener("click", async () => { await api("admin-withdrawal", { withdrawalId: item.id, status: "rejected", note: "Recusado pelo administrador" }); await refreshDashboard(); });
@@ -206,8 +314,46 @@
       } else actions.textContent = "—";
       row.append(actions); withdrawalsBody.append(row);
     }
+    const adConfiguration = data.adConfiguration || { adsenseEnabled: false, rewardBaseCents: 7000, slots: [] };
+    const rewardBaseCents = Number(adConfiguration.rewardBaseCents ?? 7000);
     const usersBody = el("admin-users-body"); usersBody.replaceChildren();
-    for (const item of data.users || []) { const row = document.createElement("tr"); cell(row, item.phone); cell(row, item.role); cell(row, item.pix_key || "—"); cell(row, date(item.created_at)); usersBody.append(row); }
+    for (const item of data.users || []) {
+      const row = document.createElement("tr");
+      const accountCell = document.createElement("td"); accountCell.className = "admin-user-account";
+      const phone = document.createElement("strong"); phone.textContent = item.phone || "Telefone não informado";
+      const details = document.createElement("small"); details.className = "admin-user-details";
+      details.textContent = `${item.role === "admin" ? "Administrador" : "Colaborador"} · Cadastro ${date(item.created_at)} · Pix: ${item.pix_key || "não cadastrada"}`;
+      accountCell.append(phone, details); row.append(accountCell);
+      const rateCell = document.createElement("td"); rateCell.className = "admin-user-rate-cell";
+      const rateControl = document.createElement("div"); rateControl.className = "admin-user-rate-control";
+      const rateInput = document.createElement("input");
+      rateInput.className = "rate-input"; rateInput.type = "number"; rateInput.min = "0"; rateInput.max = "100"; rateInput.step = "0.01";
+      rateInput.value = String(Number(item.payout_percent ?? 100)); rateInput.setAttribute("aria-label", `Percentual do valor-base para ${item.phone}`);
+      const rateSuffix = document.createElement("span"); rateSuffix.textContent = "%";
+      rateControl.append(rateInput, rateSuffix);
+      const estimatedRate = document.createElement("small"); estimatedRate.className = "admin-user-estimate";
+      const updateEstimate = () => { estimatedRate.textContent = `${money(Math.round(rewardBaseCents * (Number(rateInput.value) || 0) / 100))} por 1.000 visitas`; };
+      rateInput.addEventListener("input", updateEstimate); updateEstimate();
+      rateCell.append(rateControl, estimatedRate); row.append(rateCell);
+      const actionCell = document.createElement("td");
+      actionCell.className = "admin-user-action";
+      const saveRate = document.createElement("button"); saveRate.className = "button small"; saveRate.type = "button"; saveRate.textContent = "Salvar taxa";
+      saveRate.addEventListener("click", async () => {
+        saveRate.disabled = true;
+        try {
+          const result = await api("admin-set-user-payout", { userId: item.id, payoutPercent: Number(rateInput.value) });
+          const percent = Number(result.payoutPercent ?? rateInput.value);
+          const perThousand = money(Number(result.ratePerThousandCents ?? Math.round(Number(result.rewardBaseCents ?? 7000) * percent / 100)));
+          await refreshAdmin();
+          say(el("admin-load-message"), result.unchanged
+            ? `A taxa de ${item.phone} já era ${percent}%; nenhuma mudança ou mensagem enviada.`
+            : `Taxa de ${item.phone} salva em ${percent}% (${perThousand} por mil visitas futuras). ${result.notificationSent ? "Aviso enviado à comunidade do WhatsApp." : "Não foi possível enviar o aviso ao grupo."}`,
+            !result.unchanged && !result.notificationSent);
+        } catch (error) { say(el("admin-load-message"), error.message, true); }
+        finally { saveRate.disabled = false; }
+      });
+      actionCell.append(saveRate); row.append(actionCell); usersBody.append(row);
+    }
     const linksBody = el("admin-links-body"); linksBody.replaceChildren();
     for (const item of data.links || []) {
       const row = document.createElement("tr");
@@ -215,9 +361,123 @@
       cell(row, user?.phone || "legado");
       const shortCell = document.createElement("td"); shortCell.append(safeLink(`${config.defaultDomain}/${item.slug}`, item.slug)); row.append(shortCell);
       const targetCell = document.createElement("td"); targetCell.append(safeLink(item.target_url, item.target_url)); row.append(targetCell);
-      cell(row, Number(item.click_count || 0).toLocaleString("pt-BR")); linksBody.append(row);
+      cell(row, Number(item.qualified_click_count || 0).toLocaleString("pt-BR")); linksBody.append(row);
     }
+    el("reward-base-value").value = (Number(adConfiguration.rewardBaseCents ?? 7000) / 100).toFixed(2);
+    el("adsense-primary").checked = Boolean(adConfiguration.adsenseEnabled);
+    el("adsense-title").value = adConfiguration.adsenseTitle || "";
+    const savedSlots = Array.isArray(adConfiguration.slots) ? adConfiguration.slots : [];
+    const slotsForForm = savedSlots.length ? savedSlots : [starterAdsterraBanner];
+    const ownerCounts = { owner: 0, mateus: 0, missing: 0 };
+    for (let index = 0; index < 6; index++) {
+      const slot = slotsForForm[index];
+      el(`banner-title-${index + 1}`).value = slot?.title || "";
+      el(`banner-code-${index + 1}`).value = slot?.script || "";
+      const owner = slot?.owner || "";
+      el(`banner-owner-${index + 1}`).value = owner;
+      if (savedSlots[index]) {
+        const savedOwner = savedSlots[index].owner || "";
+        ownerCounts[savedOwner === "owner" || savedOwner === "mateus" ? savedOwner : "missing"]++;
+      }
+    }
+    el("ad-owner-summary").textContent = `Titularidade dos anúncios salvos: Fabio ${ownerCounts.owner}; Matheus ${ownerCounts.mateus}; sem titular ${ownerCounts.missing}. Esta identificação organiza os códigos, não mede o faturamento.`;
+    say(el("ad-config-message"), savedSlots.length ? "" : "O banner Adsterra Beta do Fabio está preenchido como rascunho. Clique em Salvar anúncios para ativá-lo.");
     say(el("admin-load-message"), "Dados atualizados. Contas vazias aparecem com zero; o traço indica que a leitura ainda não foi concluída.");
+  }
+
+  function renderAdminReport(report) {
+    state.adminReport = report;
+    const totals = report.totals || {};
+    el("admin-report-totals").hidden = false;
+    el("report-visits").textContent = Number(totals.qualifiedVisits || 0).toLocaleString("pt-BR");
+    el("report-estimated").textContent = money(totals.estimatedAccrualCents);
+    el("report-paid").textContent = money(totals.paidPixCents);
+    el("report-open").textContent = money(totals.openPixCents);
+    const forecast = report.forecast || {};
+    el("admin-forecast-heading").hidden = false;
+    el("admin-forecast-note").hidden = false;
+    el("admin-forecast-totals").hidden = false;
+    el("forecast-unpaid").textContent = money(forecast.unpaidAccruedCents);
+    el("forecast-week").textContent = money(forecast.reserveSevenDaysCents);
+    el("forecast-month").textContent = money(forecast.reserveThirtyDaysCents);
+    const basis = Number(forecast.sampleVisitCount || 0) === 0
+      ? "Não houve visitas qualificadas nos últimos sete dias completos; a previsão de novos repasses fica em zero até haver histórico."
+      : `Base: média dos sete dias completos de ${dateOnly(forecast.referenceStart)} a ${dateOnly(forecast.referenceEnd)}.`;
+    el("admin-forecast-note").textContent = `${basis} A reserva potencial soma essa projeção ao saldo de repasses estimado e ainda não marcado como pago. É uma estimativa de planejamento, não um valor de saque confirmado.`;
+    state.adminReportRows = report.rows || [];
+    renderFilteredAdminReport();
+  }
+
+  function renderFilteredAdminReport() {
+    const query = String(el("report-person-filter")?.value || "").trim().toLocaleLowerCase("pt-BR").replace(/\s/g, "");
+    const usersByPhone = new Map(state.adminUsers.map((user) => [String(user.phone || "").replace(/\D/g, ""), user]));
+    const rows = state.adminReportRows.filter((item) => {
+      if (!query) return true;
+      const phone = String(item.phone || "").replace(/\D/g, "");
+      const pix = String(usersByPhone.get(phone)?.pix_key || "").toLocaleLowerCase("pt-BR").replace(/\s/g, "");
+      const digitsOnlyQuery = query.replace(/\D/g, "");
+      return (digitsOnlyQuery && phone.includes(digitsOnlyQuery)) || pix.includes(query);
+    });
+    const body = el("admin-report-body"); body.replaceChildren();
+    for (const item of rows) {
+      const row = document.createElement("tr");
+      cell(row, item.period); cell(row, item.phone);
+      cell(row, Number(item.qualifiedVisits || 0).toLocaleString("pt-BR"));
+      cell(row, money(item.estimatedAccrualCents));
+      cell(row, money(item.paidPixCents)); cell(row, money(item.openPixCents));
+      body.append(row);
+    }
+    const filteredTotals = rows.reduce((total, row) => ({
+      visits: total.visits + Number(row.qualifiedVisits || 0),
+      estimated: total.estimated + Number(row.estimatedAccrualCents || 0),
+      paid: total.paid + Number(row.paidPixCents || 0),
+      open: total.open + Number(row.openPixCents || 0)
+    }), { visits: 0, estimated: 0, paid: 0, open: 0 });
+    el("report-visits").textContent = filteredTotals.visits.toLocaleString("pt-BR");
+    el("report-estimated").textContent = money(filteredTotals.estimated);
+    el("report-paid").textContent = money(filteredTotals.paid);
+    el("report-open").textContent = money(filteredTotals.open);
+    el("export-admin-report").disabled = rows.length === 0;
+    el("print-admin-report").disabled = rows.length === 0;
+    const accruedByUser = new Map();
+    rows.forEach((row) => accruedByUser.set(row.phone, (accruedByUser.get(row.phone) || 0) + Number(row.estimatedAccrualCents || 0)));
+    const eligibleUsers = [...accruedByUser].filter(([, cents]) => cents > 7000);
+    const eligibleSelect = el("report-eligible-person");
+    const previousSelection = eligibleSelect.value;
+    eligibleSelect.replaceChildren(new Option("Selecione uma pessoa", ""));
+    for (const [phone, cents] of eligibleUsers) {
+      const option = new Option(`${phone} · ${money(cents)}`, phone);
+      eligibleSelect.append(option);
+    }
+    if (eligibleUsers.some(([phone]) => phone === previousSelection)) eligibleSelect.value = previousSelection;
+    eligibleSelect.disabled = eligibleUsers.length === 0;
+    el("print-eligible-reports").disabled = eligibleUsers.length === 0 || !eligibleSelect.value;
+    return rows;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char]);
+  }
+
+  function printRevenuePdf(title, subtitle, reportRows, simulation = false) {
+    const grouped = new Map();
+    for (const row of reportRows) {
+      const key = simulation ? "Mateus · teste" : String(row.phone || "Conta");
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(row);
+    }
+    const watermark = simulation ? '<div class="stamp">SIMULAÇÃO · NÃO PAGÁVEL · NÃO ALTERA O SALDO</div>' : "";
+    const statements = [...grouped.entries()].map(([person, rows]) => {
+      const total = rows.reduce((sum, row) => ({ visits: sum.visits + Number(row.qualifiedVisits || 0), accrued: sum.accrued + Number(row.estimatedAccrualCents || 0), paid: sum.paid + Number(row.paidPixCents || 0), open: sum.open + Number(row.openPixCents || 0) }), { visits: 0, accrued: 0, paid: 0, open: 0 });
+      const personPhone = String(rows[0]?.phone || "").replace(/\D/g, "");
+      const pixKey = state.adminUsers.find((user) => String(user.phone || "").replace(/\D/g, "") === personPhone)?.pix_key || "Não cadastrada";
+      const tableRows = rows.map((row) => `<tr><td>${escapeHtml(row.period)}</td><td>${Number(row.qualifiedVisits || 0).toLocaleString("pt-BR")}</td><td>${money(row.estimatedAccrualCents)}</td><td>${money(row.paidPixCents)}</td><td>${money(row.openPixCents)}</td></tr>`).join("");
+      return `<section class="statement"><h2>${escapeHtml(person)}</h2><p>Chave Pix cadastrada: ${escapeHtml(pixKey)}</p><div class="summary"><div>Visitas qualificadas<b>${total.visits.toLocaleString("pt-BR")}</b></div><div>Repasse estimado<b>${money(total.accrued)}</b></div><div>Pix pagos<b>${money(total.paid)}</b></div><div>Em aberto<b>${money(total.open)}</b></div></div><p><b>Faixa interna de conferência de R$ 70:</b> ${total.accrued > 7000 ? "atingida (estimativa acima de R$ 70)" : "não atingida"}.</p><table><thead><tr><th>Período</th><th>Visitas qualificadas</th><th>Estimativa</th><th>Pix pagos</th><th>Em aberto</th></tr></thead><tbody>${tableRows}</tbody></table></section>`;
+    }).join("");
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow) { say(el("admin-report-message"), "O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente.", true); return; }
+    printWindow.document.write(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>body{font:14px Arial,sans-serif;color:#15251e;margin:36px}h1{color:#08785a;margin-bottom:6px}p{line-height:1.5}.summary{display:flex;gap:12px;margin:22px 0}.summary div{border:1px solid #ccd9d1;border-radius:8px;padding:12px;flex:1}.summary b{display:block;margin-top:8px;font-size:18px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{text-align:left;padding:9px;border-bottom:1px solid #dce5df;overflow-wrap:anywhere}th{background:#edf5f0}.stamp{border:3px solid #b42318;color:#b42318;font-weight:bold;text-align:center;padding:12px;margin:16px 0;font-size:18px}.foot{margin-top:26px;color:#52645a;font-size:12px}.statement{page-break-after:always}.statement:last-of-type{page-break-after:auto}@media print{button{display:none}}</style><body>${watermark}<h1>Urtador · Relatório de repasses</h1><p>${escapeHtml(subtitle)}</p>${statements}<p class="foot">Documento de controle interno do Urtador. “Visitas qualificadas” são aberturas de destino registradas pelo serviço. Repasse estimado não é receita real de Adsterra/AdSense nem comprovante bancário. ${simulation ? "Dados simulados para validar a exportação; não são elegíveis a pagamento." : "Conferir com o histórico de pagamentos antes de efetuar qualquer repasse."}</p><button onclick="window.print()">Imprimir / salvar como PDF</button><script>window.onload=()=>window.print()</script></body></html>`);
+    printWindow.document.close();
   }
 
   el("password-login-form")?.addEventListener("submit", async (event) => {
@@ -235,8 +495,10 @@
       }
       state.token = result.token; state.user = result.user;
       state.passwordSetupRequired = false;
+      state.passwordRecovery = false;
       storage.setItem("urtador-token", result.token);
       storage.removeItem("urtador-password-setup");
+      storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), "Acesso confirmado.");
     } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true); }
@@ -255,6 +517,34 @@
     } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true); }
   });
 
+  el("forgot-password-button")?.addEventListener("click", () => {
+    el("recovery-phone").value = el("login-phone").value.trim();
+    showAuth("recovery");
+    say(el("auth-message"), "");
+    el("recovery-phone").focus();
+  });
+
+  el("recovery-back")?.addEventListener("click", () => {
+    showAuth("password");
+    say(el("auth-message"), "");
+  });
+
+  el("password-recovery-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const phone = el("recovery-phone").value.trim();
+    state.phone = phone;
+    storage.setItem("urtador-phone", phone);
+    say(el("auth-message"), "Solicitando o código de recuperação…");
+    try {
+      const result = await api("request-password-recovery", { phone });
+      showAuth("otp");
+      say(el("auth-message"), `${result.message} Se você já pediu um código há pouco, use o mais recente.`);
+      el("otp").focus();
+    } catch (error) {
+      if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true);
+    }
+  });
+
   el("otp-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     say(el("auth-message"), "Validando…");
@@ -264,14 +554,28 @@
       storage.setItem("urtador-token", result.token);
       if (result.passwordSetupRequired) {
         state.passwordSetupRequired = true;
+        state.passwordRecovery = false;
         storage.setItem("urtador-password-setup", "1");
+        storage.removeItem("urtador-password-recovery");
         showAuth("set-password");
+        el("password-form-help").textContent = "WhatsApp confirmado. Crie sua senha para concluir o primeiro acesso.";
         say(el("auth-message"), "WhatsApp confirmado. Crie sua senha abaixo para concluir o primeiro acesso.");
         el("new-password").focus();
         return;
       }
+      if (result.passwordRecoveryRequired) {
+        state.passwordRecovery = true;
+        storage.setItem("urtador-password-recovery", "1");
+        showAuth("set-password");
+        el("password-form-help").textContent = "WhatsApp confirmado. Escolha uma nova senha para recuperar o acesso.";
+        say(el("auth-message"), "Código confirmado. Defina sua nova senha abaixo.");
+        el("new-password").focus();
+        return;
+      }
       state.passwordSetupRequired = false;
+      state.passwordRecovery = false;
       storage.removeItem("urtador-password-setup");
+      storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), "Acesso confirmado.");
     } catch (error) { say(el("auth-message"), error.message, true); }
@@ -294,16 +598,18 @@
     try {
       const result = await api("set-password", { password });
       state.passwordSetupRequired = false;
+      state.passwordRecovery = false;
       storage.removeItem("urtador-password-setup");
+      storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), result.message);
     } catch (error) { say(el("auth-message"), error.message, true); }
   });
 
-  el("change-phone")?.addEventListener("click", () => { showAuth("password"); el("otp").value = ""; el("login-password").value = ""; say(el("auth-message"), ""); });
+  el("change-phone")?.addEventListener("click", () => { state.passwordRecovery = false; storage.removeItem("urtador-password-recovery"); showAuth("password"); el("otp").value = ""; el("login-password").value = ""; say(el("auth-message"), ""); });
   document.querySelectorAll("[data-logout]").forEach((button) => button.addEventListener("click", async () => {
     try { await api("logout"); } catch { /* The local session is still discarded if the network is unavailable. */ }
-    state.token = ""; state.passwordSetupRequired = false; storage.removeItem("urtador-token"); storage.removeItem("urtador-phone"); storage.removeItem("urtador-password-setup");
+    state.token = ""; state.passwordSetupRequired = false; state.passwordRecovery = false; storage.removeItem("urtador-token"); storage.removeItem("urtador-phone"); storage.removeItem("urtador-password-setup"); storage.removeItem("urtador-password-recovery");
     state.user = null; state.activeDashboardPage = "";
     setLoggedIn(false); showAuth("password"); el("login-password").value = ""; say(el("auth-message"), "Você saiu da sua conta.");
   }));
@@ -345,26 +651,179 @@
   });
 
   el("withdraw-button")?.addEventListener("click", async () => {
-    try { const result = await api("withdraw"); say(el("payout-message"), result.message); await refreshDashboard(); }
-    catch (error) { say(el("payout-message"), error.message, true); }
+    const amount = Number(el("withdrawal-amount").value);
+    if (!Number.isSafeInteger(amount) || amount < 10 || amount % 10 !== 0) {
+      say(el("payout-message"), "Escolha pelo menos R$ 10,00, em múltiplos de R$ 10,00.", true); return;
+    }
+    const button = el("withdraw-button"); button.disabled = true;
+    try {
+      const result = await api("withdraw", { amountCents: amount * 100 });
+      say(el("payout-message"), `${result.message}${result.notificationSent ? " Aviso enviado à comunidade." : " O pedido ficou registrado; o aviso à comunidade não foi enviado."}`, !result.notificationSent);
+      await refreshDashboard();
+    } catch (error) { say(el("payout-message"), error.message, true); }
+    finally {
+      const current = state.data || {};
+      const maxAvailable = Math.floor(Number(current.availableCents || 0) / 1000) * 10;
+      button.disabled = Number(current.earnedCents || 0) < 7000 || maxAvailable < 10;
+    }
   });
 
   el("refresh-admin")?.addEventListener("click", () => refreshAdmin().catch((error) => window.alert(error.message)));
 
-  el("prelogin-link-form")?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const url = el("pending-url").value.trim();
-    storage.setItem("urtador-pending-link", JSON.stringify({url, savedAt: Date.now()}));
-    say(el("draft-message"), "Endereço guardado. Entre com sua senha ou escolha receber o código; depois do acesso, vamos retomar este link.");
-    el("login-phone").focus();
+  const adminSections = [...document.querySelectorAll("#admin-panel details.admin-section")];
+  el("admin-expand-all")?.addEventListener("click", () => adminSections.forEach((section) => { section.open = true; }));
+  el("admin-collapse-all")?.addEventListener("click", () => adminSections.forEach((section) => { section.open = false; }));
+
+  document.querySelectorAll("[data-banner-preview]").forEach((button) => {
+    button.addEventListener("click", () => showAdPreview(button.dataset.bannerPreview));
   });
 
-  const pendingDraft = storage.getItem("urtador-pending-link");
-  if (pendingDraft) {
-    try { el("pending-url").value = JSON.parse(pendingDraft).url || ""; } catch { storage.removeItem("urtador-pending-link"); }
-  }
+  el("reward-base-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    const amount = Number(el("reward-base-value").value);
+    if (!Number.isFinite(amount) || amount < 0 || amount > 500) {
+      say(el("reward-base-message"), "Informe um valor entre R$ 0,00 e R$ 500,00.", true);
+      return;
+    }
+    button.disabled = true;
+    say(el("reward-base-message"), "Salvando valor-base…");
+    try {
+      const result = await api("admin-set-reward-base", { rewardBaseCents: Math.round(amount * 100) });
+      const notice = result.notificationSent ? "Aviso enviado à comunidade." : "O valor foi salvo, mas o aviso do WhatsApp não foi enviado; confira a integração do grupo.";
+      say(el("reward-base-message"), `Valor salvo: ${money(result.rewardBaseCents)} por mil visitas qualificadas. ${notice}`, !result.notificationSent);
+      await refreshAdmin();
+    } catch (error) {
+      say(el("reward-base-message"), error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  el("ad-config-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    say(el("ad-config-message"), "Validando e salvando as configurações…");
+    try {
+      const result = await api("admin-save-ad-configuration", {
+        adsenseEnabled: el("adsense-primary").checked,
+        adsenseTitle: el("adsense-title").value,
+        adScripts: Array.from({ length: 6 }, (_, index) => ({ title: el(`banner-title-${index + 1}`).value, code: el(`banner-code-${index + 1}`).value, owner: el(`banner-owner-${index + 1}`).value }))
+      });
+      const groupNotice = result.notificationSent ? " Aviso enviado à comunidade Kuttencurtador." : " Não foi possível enviar o aviso ao grupo; confira a conexão do WhatsApp.";
+      say(el("ad-config-message"), `Configuração salva: ${result.adConfiguration.slots.length} banner(s) Adsterra na Guia e na etapa 2/2. O destino não depende de interação com o anúncio. O AdSense continua desligado até aprovação.${groupNotice}`);
+      await refreshAdmin();
+    } catch (error) {
+      say(el("ad-config-message"), error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  el("prelogin-link-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("button[type='submit']");
+    const output = el("guest-link-output");
+    button.disabled = true;
+    output.hidden = true;
+    say(el("draft-message"), "Criando seu link…");
+    api("create", { url: el("pending-url").value, guestSessionId: guestSessionId() }).then((result) => {
+      const anchor = el("guest-link-result");
+      anchor.href = result.shortUrl;
+      anchor.textContent = result.shortUrl;
+      output.hidden = false;
+      say(el("draft-message"), "Link pronto. Ele será vinculado à sua conta se você entrar neste mesmo navegador.");
+      if (typeof window.gtag === "function") window.gtag("event", "urtador_link_created", { event_category: "engagement", event_label: "guest_short_link" });
+    }).catch((error) => say(el("draft-message"), error.message, true)).finally(() => { button.disabled = false; });
+  });
+
+  el("copy-guest-link")?.addEventListener("click", async () => {
+    const url = el("guest-link-result").href;
+    try { await navigator.clipboard.writeText(url); say(el("draft-message"), "Link copiado."); }
+    catch { say(el("draft-message"), url); }
+  });
+
+  el("admin-report-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector("button[type='submit']");
+    button.disabled = true;
+    say(el("admin-report-message"), "Consultando os repasses registrados…");
+    try {
+      const report = await api("admin-report", { reportStart: el("report-start").value, reportEnd: el("report-end").value, reportGroup: el("report-group").value });
+      renderAdminReport(report);
+      say(el("admin-report-message"), `Relatório de ${dateOnly(report.start)} a ${dateOnly(report.end)} carregado.`);
+    } catch (error) { say(el("admin-report-message"), error.message, true); }
+    finally { button.disabled = false; }
+  });
+
+  el("admin-payout-test-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const person = el("payout-test-person").value;
+    const amountCents = Number(el("payout-test-amount").value);
+    const personLabel = person === "mateus" ? "Mateus (final 9929)" : "Fabio (final 6164)";
+    if (!window.confirm(`Enviar à comunidade um AVISO DE TESTE para ${personLabel}, no valor ilustrativo de ${money(amountCents)}? A mensagem dirá que não houve saque nem Pix.`)) return;
+    const button = el("send-payout-test");
+    button.disabled = true;
+    say(el("payout-test-message"), "Enviando aviso identificado como teste…");
+    try {
+      const result = await api("admin-test-withdrawal-notice", { testPerson: person, amountCents });
+      say(el("payout-test-message"), result.message || "Aviso de teste enviado. Nenhum dado financeiro foi alterado.");
+    } catch (error) {
+      say(el("payout-test-message"), error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  el("export-admin-report")?.addEventListener("click", () => {
+    const columns = ["periodo", "telefone_gerador", "visitas_qualificadas", "repasse_estimado_centavos", "pix_pagos_centavos", "pix_em_aberto_centavos"];
+    const quote = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const lines = [columns, ...renderFilteredAdminReport().map((row) => [row.period, row.phone, row.qualifiedVisits, row.estimatedAccrualCents, row.paidPixCents, row.openPixCents])];
+    const blob = new Blob([`\uFEFF${lines.map((line) => line.map(quote).join(",")).join("\r\n")}`], { type: "text/csv;charset=utf-8" });
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement("a"); anchor.href = href; anchor.download = "urtador-relatorio-repasses.csv"; anchor.click();
+    URL.revokeObjectURL(href);
+  });
+
+  el("report-person-filter")?.addEventListener("input", renderFilteredAdminReport);
+  el("print-admin-report")?.addEventListener("click", () => {
+    const rows = renderFilteredAdminReport();
+    if (!rows.length || !state.adminReport) return;
+    const filter = el("report-person-filter").value.trim();
+    const person = filter ? ` · Filtro: ${filter}` : " · Todos os geradores";
+    printRevenuePdf("Relatório de repasses Urtador", `Período ${dateOnly(state.adminReport.start)} a ${dateOnly(state.adminReport.end)}${person}`, rows);
+  });
+  el("print-eligible-reports")?.addEventListener("click", () => {
+    const rows = renderFilteredAdminReport();
+    const phone = el("report-eligible-person").value;
+    const eligibleRows = rows.filter((row) => row.phone === phone);
+    if (!eligibleRows.length || !state.adminReport) return;
+    printRevenuePdf("Relatório individual de repasse Urtador", `Período ${dateOnly(state.adminReport.start)} a ${dateOnly(state.adminReport.end)} · relatório individual`, eligibleRows);
+  });
+  el("report-eligible-person")?.addEventListener("change", () => {
+    el("print-eligible-reports").disabled = !el("report-eligible-person").value;
+  });
+  el("test-mateus-report")?.addEventListener("click", () => {
+    const mateus = state.adminUsers.find((user) => String(user.phone || "").replace(/\D/g, "").endsWith("9929"));
+    const percent = Number(mateus?.payout_percent ?? 50);
+    const visits = 995;
+    const cents = Math.round(visits * state.rewardBaseCents * percent / 100 / 1000);
+    const simulatedRow = { period: "SIMULAÇÃO", phone: "Mateus · teste", qualifiedVisits: visits, estimatedAccrualCents: cents, paidPixCents: 0, openPixCents: 0 };
+    printRevenuePdf("Simulação de exportação Urtador", `Teste local · 995 visitas fictícias · taxa usada no cenário: ${percent}% · base interna: ${money(state.rewardBaseCents)} por 1.000 visitas`, [simulatedRow], true);
+  });
+
+  const reportToday = new Date();
+  const reportDate = new Date(reportToday.getTime() - reportToday.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (el("report-start")) el("report-start").value = `${reportDate.slice(0, 8)}01`;
+  if (el("report-end")) el("report-end").value = reportDate;
   if (state.phone) el("login-phone").value = state.phone;
-  if (state.token && state.passwordSetupRequired) {
+  if (state.token && state.passwordRecovery) {
+    showAuth("set-password");
+    el("password-form-help").textContent = "WhatsApp confirmado. Escolha uma nova senha para recuperar o acesso.";
+    say(el("auth-message"), "Código confirmado. Defina sua nova senha abaixo.");
+  } else if (state.token && state.passwordSetupRequired) {
     showAuth("set-password");
     say(el("auth-message"), "Seu WhatsApp já foi confirmado. Crie sua senha para concluir o primeiro acesso.");
   } else if (state.token) {
