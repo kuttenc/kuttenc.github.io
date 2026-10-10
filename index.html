@@ -12,7 +12,7 @@
     <meta property="og:title" content="Urtador — links curtos para o seu negócio">
     <meta property="og:description" content="Organize e compartilhe links curtos para atendimento, cardápios e campanhas.">
     <title>Urtador — encurtador de links em português</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20261009-auth-refresh">
+    <link rel="stylesheet" href="assets/styles.css?v=20261009-ddi">
   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18495877040"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -43,7 +43,7 @@
                 <small class="field-help">O grupo publica somente o código e o DDD com os quatro últimos dígitos do telefone. Cadastre usando o mesmo número que participa do grupo.</small>
               </aside>
               <form id="password-login-form">
-                <div class="field"><label for="login-phone">Seu celular com DDD</label><input id="login-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+                <div class="field"><label for="login-dial-code">País e DDI</label><select id="login-dial-code" class="country-dial-select" autocomplete="country"></select><label for="login-phone">Celular com DDD</label><input id="login-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(11) 99999-9999" maxlength="20" required></div>
                 <div class="field"><label for="login-password">Sua senha</label><input id="login-password" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required></div>
                 <button class="button" type="submit">Entrar</button>
               </form>
@@ -51,7 +51,7 @@
               <button class="button secondary" type="button" id="forgot-password-button">Esqueci minha senha</button>
               <form id="password-recovery-form" hidden>
                 <p class="field-help">Informe o telefone cadastrado. Depois de confirmar que ele está no grupo, publicaremos o código lá para redefinir a senha.</p>
-                <div class="field"><label for="recovery-phone">Seu celular com DDD</label><input id="recovery-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+                <div class="field"><label for="recovery-dial-code">País e DDI</label><select id="recovery-dial-code" class="country-dial-select" autocomplete="country"></select><label for="recovery-phone">Celular com DDD</label><input id="recovery-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(11) 99999-9999" maxlength="20" required></div>
                 <button class="button" type="submit">Enviar código de recuperação</button>
                 <button class="button secondary" type="button" id="recovery-back">Voltar ao login</button>
               </form>
@@ -137,7 +137,7 @@
                   <section class="workspace-page" data-dashboard-area="payouts" hidden>
                     <div class="workspace-two-column">
                       <section class="panel"><h3>Solicitar saque via Pix</h3><p class="field-help">É necessário ter saldo líquido disponível de pelo menos R$ 70,00, já descontadas as tarifas dos avisos e os saques anteriores, para liberar solicitações. Depois de atingir esse limite, cada pedido deve ser de no mínimo R$ 10,00, em múltiplos de R$ 10,00, com até 3 solicitações por dia. Um administrador confere e faz o Pix manualmente pela Cora; pedidos pendentes são avisados no grupo pelo final do telefone e valor.</p>
-                        <form id="pix-form"><div class="field"><label for="pix-key">Sua chave Pix</label><input id="pix-key" name="pixKey" maxlength="120" autocomplete="off" placeholder="CPF, celular, e-mail ou chave aleatória" required></div><button class="button secondary" type="submit">Salvar chave Pix</button></form>
+                        <form id="pix-form"><div class="field"><label for="pix-key">Sua chave Pix</label><input id="pix-key" name="pixKey" maxlength="120" autocomplete="off" placeholder="CPF, celular, e-mail ou chave aleatória" required></div><button class="button secondary" type="submit">Salvar chave Pix</button></form><p id="pix-confirmation-status" class="field-help">Confirme a chave salva pelo WhatsApp para identificar que ela está correta.</p><button class="button secondary" id="confirm-pix-whatsapp" type="button" hidden>Confirmar chave pelo WhatsApp</button><p class="message" id="pix-confirmation-message" aria-live="polite"></p>
                         <div class="field"><label for="withdrawal-amount">Valor do saque (R$)</label><input id="withdrawal-amount" type="number" min="10" step="10" value="10" inputmode="numeric"></div>
                         <button class="button" type="button" id="withdraw-button">Solicitar saque</button><p class="message" id="payout-message" aria-live="polite"></p>
                       </section>
@@ -241,7 +241,7 @@
                         <button class="button" id="import-adsense-api" type="button">Conectar Google e importar AdSense</button>
                       </div>
                       <div class="ad-config-form">
-                        <p class="field-help">A chave da API Adsterra fica somente nos secrets do Supabase. A importação usa o mesmo período acima e preserva a receita em USD, separada do AdSense e dos repasses internos.</p>
+                      <p class="field-help">A chave da API Adsterra fica somente nos secrets do Supabase. A importação traz impressões, cliques, CTR e CPM como reportados pela rede; a receita real permanece separada e em USD.</p>
                         <button class="button secondary" id="import-adsterra-api" type="button">Importar relatório da API Adsterra</button>
                       </div>
                       <form id="admin-ad-revenue-entry" class="ad-config-form">
@@ -257,7 +257,7 @@
                       </form>
                       <p class="field-help" id="admin-ad-revenue-note">AdSense pode ser importado pela API ou corrigido manualmente; Adsterra continua com lançamento manual. Salvar o mesmo provedor e dia atualiza o registro.</p>
                       <p class="message" id="admin-ad-revenue-message" aria-live="polite"></p>
-                      <div class="table-wrap"><table><thead><tr><th>Data</th><th>Rede</th><th>Impressões</th><th>Cliques reportados</th><th>Receita estimada</th><th>Origem</th></tr></thead><tbody id="admin-ad-revenue-body"></tbody></table></div>
+                      <div class="table-wrap"><table><thead><tr><th>Data</th><th>Rede</th><th>Impressões</th><th>Cliques reportados</th><th>CTR reportado</th><th>CPM reportado</th><th>Receita estimada</th><th>Origem</th></tr></thead><tbody id="admin-ad-revenue-body"></tbody></table></div>
                     </details>
                     <details class="admin-section" id="admin-payout-test-section">
                       <summary><span>Modo teste — aviso de saque na comunidade</span><span class="admin-section-toggle">Abrir</span></summary>
@@ -348,7 +348,8 @@
       <footer class="site-footer"><p>Urtador — ferramenta independente para criar e compartilhar links curtos.</p><nav aria-label="Links legais e suporte"><a href="guia.html">Guia</a><a href="sobre.html">Sobre</a><a href="privacidade.html">Política de privacidade</a><a href="termos.html">Termos de uso</a><a href="https://github.com/kuttenc/urtador/issues" target="_blank" rel="noopener noreferrer">Contato e suporte</a></nav><p class="footer-note">Use o serviço com responsabilidade. Não encurte nem divulgue links abusivos ou enganosos.</p></footer>
     </div>
     <script src="assets/config.js?v=20261008-adsense-oauth"></script>
+    <script src="assets/country-dial-codes.js?v=20261009-ddi"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="assets/app.js?v=20261009-auth-refresh"></script>
+    <script src="assets/app.js?v=20261009-ddi"></script>
   </body>
 </html>
