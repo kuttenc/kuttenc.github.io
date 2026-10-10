@@ -408,6 +408,12 @@
     return true;
   }
 
+  function friendlyAuthError(error) {
+    const message = String(error?.message || "Não foi possível concluir o acesso.");
+    if (/muitas tentativas/i.test(message)) return "Muitas tentativas. Aguarde até 1 hora sem tentar novamente; repetir agora pode manter o bloqueio.";
+    return message;
+  }
+
   async function loadPersonalAdRevenueReport(showMessage = true) {
     const start = el("personal-ad-report-start")?.value;
     const end = el("personal-ad-report-end")?.value;
@@ -804,7 +810,7 @@
       const result = await api("login-password", { phone, password });
       if (result.otpRequired) {
         showAuth("otp");
-        say(el("auth-message"), "Senha confirmada. Digite também o código enviado pelo WhatsApp.");
+        say(el("auth-message"), "Senha confirmada. Digite o código publicado na comunidade Kuttencurtador.");
         return;
       }
       state.token = result.token; state.user = result.user;
@@ -815,7 +821,7 @@
       storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), "Acesso confirmado.");
-    } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true); }
+    } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), friendlyAuthError(error), true); }
   });
 
   el("first-access-button")?.addEventListener("click", async () => {
@@ -823,12 +829,12 @@
     if (!phoneInput.reportValidity()) return;
     const phone = phoneInput.value.trim();
     state.phone = phone; storage.setItem("urtador-phone", phone);
-    say(el("auth-message"), "Enviando código…");
+    say(el("auth-message"), "Confirmando se seu telefone está na comunidade…");
     try {
       await api("request-otp", { phone });
       showAuth("otp");
-      say(el("auth-message"), "Código enviado pelo WhatsApp. Digite os 6 números recebidos.");
-    } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true); }
+      say(el("auth-message"), "Código publicado na comunidade. Confira a mensagem identificada pelo DDD e final do seu telefone.");
+    } catch (error) { if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), friendlyAuthError(error), true); }
   });
 
   el("forgot-password-button")?.addEventListener("click", () => {
@@ -848,14 +854,14 @@
     const phone = el("recovery-phone").value.trim();
     state.phone = phone;
     storage.setItem("urtador-phone", phone);
-    say(el("auth-message"), "Solicitando o código de recuperação…");
+    say(el("auth-message"), "Confirmando sua participação e pedindo o código no grupo…");
     try {
       const result = await api("request-password-recovery", { phone });
       showAuth("otp");
-      say(el("auth-message"), `${result.message} Se você já pediu um código há pouco, use o mais recente.`);
+      say(el("auth-message"), `${result.message} Confira a mensagem identificada pelo DDD e final do seu telefone na comunidade Kuttencurtador.`);
       el("otp").focus();
     } catch (error) {
-      if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), error.message, true);
+      if (!showExistingCodeIfRateLimited(error)) say(el("auth-message"), friendlyAuthError(error), true);
     }
   });
 
@@ -872,8 +878,8 @@
         storage.setItem("urtador-password-setup", "1");
         storage.removeItem("urtador-password-recovery");
         showAuth("set-password");
-        el("password-form-help").textContent = "WhatsApp confirmado. Crie sua senha para concluir o primeiro acesso.";
-        say(el("auth-message"), "WhatsApp confirmado. Crie sua senha abaixo para concluir o primeiro acesso.");
+        el("password-form-help").textContent = "Código da comunidade confirmado. Crie sua senha para concluir o primeiro acesso.";
+        say(el("auth-message"), "Código da comunidade confirmado. Crie sua senha abaixo para concluir o primeiro acesso.");
         el("new-password").focus();
         return;
       }
@@ -881,7 +887,7 @@
         state.passwordRecovery = true;
         storage.setItem("urtador-password-recovery", "1");
         showAuth("set-password");
-        el("password-form-help").textContent = "WhatsApp confirmado. Escolha uma nova senha para recuperar o acesso.";
+        el("password-form-help").textContent = "Código da comunidade confirmado. Escolha uma nova senha para recuperar o acesso.";
         say(el("auth-message"), "Código confirmado. Defina sua nova senha abaixo.");
         el("new-password").focus();
         return;
@@ -892,7 +898,7 @@
       storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), "Acesso confirmado.");
-    } catch (error) { say(el("auth-message"), error.message, true); }
+    } catch (error) { say(el("auth-message"), friendlyAuthError(error), true); }
   });
 
   el("set-password-form")?.addEventListener("submit", async (event) => {
@@ -917,7 +923,7 @@
       storage.removeItem("urtador-password-recovery");
       await refreshDashboard();
       say(el("auth-message"), result.message);
-    } catch (error) { say(el("auth-message"), error.message, true); }
+    } catch (error) { say(el("auth-message"), friendlyAuthError(error), true); }
   });
 
   el("change-phone")?.addEventListener("click", () => { state.passwordRecovery = false; storage.removeItem("urtador-password-recovery"); showAuth("password"); el("otp").value = ""; el("login-password").value = ""; say(el("auth-message"), ""); });
@@ -1329,7 +1335,7 @@
   if (state.phone) el("login-phone").value = state.phone;
   if (state.token && state.passwordRecovery) {
     showAuth("set-password");
-    el("password-form-help").textContent = "WhatsApp confirmado. Escolha uma nova senha para recuperar o acesso.";
+    el("password-form-help").textContent = "Código da comunidade confirmado. Escolha uma nova senha para recuperar o acesso.";
     say(el("auth-message"), "Código confirmado. Defina sua nova senha abaixo.");
   } else if (state.token && state.passwordSetupRequired) {
     showAuth("set-password");
@@ -1337,7 +1343,7 @@
   } else if (state.token) {
     refreshDashboard().catch((error) => {
       state.token = ""; storage.removeItem("urtador-token"); setLoggedIn(false); showAuth("password");
-      say(el("auth-message"), error.message, true);
+      say(el("auth-message"), "Sua sessão anterior expirou. Entre com seu telefone e senha para continuar.", true);
     });
   } else showAuth("password");
 })();
