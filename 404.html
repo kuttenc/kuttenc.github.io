@@ -3,29 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Abrindo link - Urtador</title>
-    <link rel="stylesheet" href="assets/styles.css">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18495877040"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'AW-18495877040');
-</script>
+    <title>Urtador</title>
 </head>
   <body>
-    <main class="redirect">
-      <section class="redirect-box">
-        <div class="brand" aria-label="Urtador">
-          <span class="mark">U</span>
-          <span>Urtador</span>
-        </div>
-        <h1>Abrindo link</h1>
-        <p class="message" data-redirect-status>Preparando redirecionamento...</p>
-      </section>
-    </main>
-    <script src="assets/config.js"></script>
-    <script src="assets/redirect.js"></script>
+    <script>
+      (function () {
+        const suffix = window.location.pathname.replace(/^\/+/, "");
+        window.location.replace(`/urtador/${suffix}${window.location.search}${window.location.hash}`);
+      })();
+    </script>
+    <p><a href="/urtador/">Abrir o Urtador</a></p>
   </body>
 </html>
 
