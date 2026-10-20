@@ -15,7 +15,7 @@
   <div class="top-tape"><span class="pulse" aria-hidden="true"></span> KUTTENC INVESTINDO <b>•</b> PAINEL DE MERCADO ABERTO <span id="session-label">Carregando sessão…</span></div>
   <header class="market-header">
     <a class="market-brand" href="/" aria-label="Página inicial Kuttenc"><span class="brand-mark" aria-hidden="true">K</span><span>KUTTENC</span><small>INVESTINDO</small></a>
-    <nav aria-label="Navegação do mercado"><a href="#panorama">Panorama</a><a href="#simulador">Simulador</a><a href="#pares">Forex</a><a href="#noticias">Notícias</a><a href="#agenda">Agenda</a></nav>
+    <nav aria-label="Navegação do mercado"><a href="#panorama">Panorama</a><a href="#leitura">Leitura</a><a href="#simulador">Simulador</a><a href="#pares">Forex</a><a href="#noticias">Notícias</a><a href="#agenda">Agenda</a></nav>
     <div class="theme-picker" aria-label="Escolher tema"><button type="button" data-theme="noite" aria-label="Tema Noite"></button><button type="button" data-theme="rubi" aria-label="Tema Rubi"></button><button type="button" data-theme="aurora" aria-label="Tema Aurora"></button></div>
   </header>
   <main>
@@ -39,6 +39,13 @@
     <section class="watch-section" aria-labelledby="watch-title">
       <div class="section-heading"><div><p class="eyebrow">MAPA DE LEITURA</p><h2 id="watch-title">Antes de olhar o gráfico</h2></div><p>Use este roteiro para organizar o contexto do dia antes de tomar qualquer decisão.</p></div>
       <div class="watch-grid"><article><span class="card-index">01</span><h3>Agenda primeiro</h3><p>Confira decisões de juros, inflação, emprego e falas de bancos centrais.</p><a href="#agenda">Abrir agenda <span>→</span></a></article><article><span class="card-index">02</span><h3>Notícia com fonte</h3><p>Leia a matéria completa e compare a repercussão em mais de uma fonte.</p><a href="#noticias">Ver cobertura <span>→</span></a></article><article><span class="card-index">03</span><h3>Preço e risco</h3><p>Observe volatilidade, liquidez e seu limite de exposição antes de qualquer operação.</p><a href="#pares">Acompanhar pares <span>→</span></a></article></div>
+    </section>
+    <section class="editorial-section" id="leitura" aria-labelledby="editorial-title">
+      <div class="section-heading"><div><p class="eyebrow">GUIA DE LEITURA</p><h2 id="editorial-title">Como transformar dados em contexto</h2></div><p>O painel organiza informações. A interpretação depende do momento, da fonte e da estratégia de cada pessoa.</p></div>
+      <div class="editorial-layout">
+        <article class="editorial-main"><p class="article-kicker">COMECE POR AQUI</p><h3>Três perguntas antes de acompanhar qualquer par</h3><ol><li><strong>O que está no calendário?</strong><span>Decisões de juros, dados de inflação e empregos alteram a expectativa sobre uma moeda.</span></li><li><strong>Qual mercado está aberto?</strong><span>Liquidez e volatilidade costumam mudar entre Ásia, Londres e Nova York.</span></li><li><strong>O preço confirmou o contexto?</strong><span>Notícia, agenda e gráfico podem apontar direções diferentes. Compare antes de concluir.</span></li></ol><p class="article-note">Leitura de mercado não elimina risco. Pares podem variar rapidamente, inclusive em períodos com pouca notícia.</p></article>
+        <aside class="source-card"><p class="article-kicker">FONTES E METODOLOGIA</p><h3>O que aparece neste painel</h3><ul><li><b>Cotações e agenda:</b> widgets do TradingView.</li><li><b>Manchetes:</b> fontes indexadas pelo GDELT; o botão abre a matéria original.</li><li><b>Velas:</b> cenário visual fictício, gerado no próprio navegador.</li><li><b>Horários:</b> referência aproximada em Brasília; feriados podem mudar a sessão.</li></ul><a href="metodologia.html">Ver metodologia completa <span>→</span></a></aside>
+      </div>
     </section>
     <section class="simulator-section" id="simulador" aria-labelledby="simulator-title">
       <div class="section-heading"><div><p class="eyebrow">LABORATÓRIO VISUAL</p><h2 id="simulator-title">Simulador de velas</h2></div><p>Explore movimentos hipotéticos por período e sessão. O gráfico não usa preço real, não envia dados e não é previsão.</p></div>
@@ -66,7 +73,7 @@
       <div class="calendar-card"><div class="calendar-card-top"><span>CALENDÁRIO GLOBAL</span><span>Filtro: EUA · Europa · Reino Unido · Japão · Brasil</span></div><div class="tradingview-widget-container calendar-widget"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>{"colorTheme":"dark","isTransparent":true,"width":"100%","height":"500","locale":"br","importanceFilter":"0,1","countryFilter":"us,eu,gb,jp,br"}</script></div></div>
     </section>
   </main>
-  <footer><div><strong>KUTTENC INVESTINDO</strong><p>Dados de mercado podem ter atraso conforme o provedor. Conteúdo informativo, sem recomendação ou garantia de retorno.</p></div><a href="/">Voltar ao início <span>↗</span></a></footer>
+  <footer><div><strong>KUTTENC INVESTINDO</strong><p>Dados de mercado podem ter atraso conforme o provedor. Conteúdo informativo, sem recomendação ou garantia de retorno.</p><nav class="footer-links" aria-label="Informações institucionais"><a href="metodologia.html">Metodologia</a><a href="privacidade.html">Privacidade</a><a href="termos.html">Termos</a><a href="/">Kuttenc</a></nav></div><a href="/">Voltar ao início <span>↗</span></a></footer>
   <script src="../assets/investindo.js" defer></script>
 </body>
 </html>
