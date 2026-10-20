@@ -3,58 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#06090f">
-  <meta name="description" content="Acompanhamento aberto de Forex, agenda econômica e notícias recentes.">
+  <meta name="theme-color" content="#07090e">
+  <meta name="description" content="Kuttenc Investindo: acompanhamento aberto de Forex, agenda econômica e notícias recentes.">
+  <meta property="og:title" content="Kuttenc Investindo — mercado em acompanhamento">
+  <meta property="og:description" content="Forex, agenda econômica e notícias recentes, sem cadastro.">
   <link rel="canonical" href="https://kuttenc.github.io/investindo/">
-  <title>Investindo — mercado em acompanhamento</title>
+  <title>Kuttenc Investindo — mercado em acompanhamento</title>
   <link rel="stylesheet" href="../assets/investindo.css">
 </head>
-<body>
+<body data-theme="noite">
+  <div class="top-tape"><span class="pulse" aria-hidden="true"></span> KUTTENC INVESTINDO <b>•</b> PAINEL DE MERCADO ABERTO <span id="session-label">Carregando sessão…</span></div>
   <header class="market-header">
-    <a class="market-brand" href="/" aria-label="Página inicial"><span aria-hidden="true">↗</span> kuttenc</a>
-    <nav aria-label="Navegação"><a href="#pares">Forex</a><a href="#noticias">Notícias</a><a href="#agenda">Agenda</a></nav>
+    <a class="market-brand" href="/" aria-label="Página inicial Kuttenc"><span class="brand-mark" aria-hidden="true">K</span><span>KUTTENC</span><small>INVESTINDO</small></a>
+    <nav aria-label="Navegação do mercado"><a href="#panorama">Panorama</a><a href="#pares">Forex</a><a href="#noticias">Notícias</a><a href="#agenda">Agenda</a></nav>
+    <div class="theme-picker" aria-label="Escolher tema"><button type="button" data-theme="noite" aria-label="Tema Noite"></button><button type="button" data-theme="rubi" aria-label="Tema Rubi"></button><button type="button" data-theme="aurora" aria-label="Tema Aurora"></button></div>
   </header>
   <main>
-    <section class="market-hero" aria-labelledby="market-title">
-      <p class="eyebrow">MERCADO ABERTO · SEM CADASTRO</p>
-      <h1 id="market-title">Forex em<br><em>acompanhamento.</em></h1>
-      <p class="market-intro">Cotações, contexto técnico e notícias recentes para acompanhar o mercado em um único lugar.</p>
-      <div class="market-status"><span class="live-dot" aria-hidden="true"></span><span id="market-clock">Carregando horário…</span><button id="refresh-news" type="button">Atualizar notícias</button></div>
-    </section>
-
-    <section class="ticker-section" aria-label="Cotações principais">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        {"symbols":[{"proName":"FX_IDC:EURUSD","title":"EUR / USD"},{"proName":"FX_IDC:GBPUSD","title":"GBP / USD"},{"proName":"FX_IDC:USDJPY","title":"USD / JPY"},{"proName":"FX_IDC:AUDUSD","title":"AUD / USD"},{"proName":"FX_IDC:USDCAD","title":"USD / CAD"},{"proName":"FX_IDC:USDCHF","title":"USD / CHF"}],"showSymbolLogo":false,"isTransparent":true,"displayMode":"adaptive","colorTheme":"dark","locale":"br"}
-        </script>
+    <section class="market-hero" id="panorama" aria-labelledby="market-title">
+      <div class="hero-copy">
+        <p class="eyebrow">LEITURA DE MERCADO · SEM CADASTRO</p>
+        <h1 id="market-title">Seu radar<br><em>para o câmbio.</em></h1>
+        <p class="market-intro">Um painel direto para acompanhar pares, sessões globais, agenda econômica e o noticiário que influencia o Forex.</p>
+        <div class="hero-actions"><a class="primary-action" href="#pares">Ver pares agora <span aria-hidden="true">↓</span></a><button class="ghost-action" id="refresh-news" type="button">Atualizar cobertura</button></div>
       </div>
-    </section>
-
-    <section class="market-grid" id="pares" aria-labelledby="pairs-title">
-      <div class="section-heading"><div><p class="eyebrow">PARES EM OBSERVAÇÃO</p><h2 id="pairs-title">Visão ampla do mercado</h2></div><p>Indicadores acompanham preço e tendência. Eles não garantem resultado ou retorno.</p></div>
-      <div class="chart-card">
-        <div class="tradingview-widget-container market-overview-widget">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-          {"colorTheme":"dark","dateRange":"12M","showChart":true,"locale":"br","isTransparent":true,"showSymbolLogo":false,"showFloatingTooltip":false,"width":"100%","height":"600","tabs":[{"title":"Forex","symbols":[{"s":"FX:EURUSD","d":"EUR / USD"},{"s":"FX:GBPUSD","d":"GBP / USD"},{"s":"FX:USDJPY","d":"USD / JPY"},{"s":"FX:AUDUSD","d":"AUD / USD"},{"s":"FX:USDCAD","d":"USD / CAD"},{"s":"FX:USDCHF","d":"USD / CHF"}]}]}
-          </script>
+      <aside class="market-pulse-card" aria-label="Resumo de acompanhamento">
+        <div class="pulse-card-heading"><span class="live-dot" aria-hidden="true"></span><span>STATUS DO RADAR</span><strong>AO VIVO</strong></div>
+        <div class="market-clock" id="market-clock">Carregando horário…</div>
+        <div class="session-list">
+          <div data-session="sydney"><span>SYD</span><b>Sydney</b><i>—</i></div><div data-session="tokyo"><span>TKY</span><b>Tóquio</b><i>—</i></div><div data-session="london"><span>LDN</span><b>Londres</b><i>—</i></div><div data-session="newyork"><span>NYC</span><b>Nova York</b><i>—</i></div>
         </div>
-      </div>
+        <p>Horários aproximados. Feriados e horários especiais podem alterar a abertura.</p>
+      </aside>
     </section>
-
+    <section class="ticker-section" aria-label="Cotações principais"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>{"symbols":[{"proName":"FX_IDC:EURUSD","title":"EUR / USD"},{"proName":"FX_IDC:GBPUSD","title":"GBP / USD"},{"proName":"FX_IDC:USDJPY","title":"USD / JPY"},{"proName":"FX_IDC:AUDUSD","title":"AUD / USD"},{"proName":"FX_IDC:USDCAD","title":"USD / CAD"},{"proName":"FX_IDC:USDCHF","title":"USD / CHF"}],"showSymbolLogo":false,"isTransparent":true,"displayMode":"adaptive","colorTheme":"dark","locale":"br"}</script></div></section>
+    <section class="watch-section" aria-labelledby="watch-title">
+      <div class="section-heading"><div><p class="eyebrow">MAPA DE LEITURA</p><h2 id="watch-title">Antes de olhar o gráfico</h2></div><p>Use este roteiro para organizar o contexto do dia antes de tomar qualquer decisão.</p></div>
+      <div class="watch-grid"><article><span class="card-index">01</span><h3>Agenda primeiro</h3><p>Confira decisões de juros, inflação, emprego e falas de bancos centrais.</p><a href="#agenda">Abrir agenda <span>→</span></a></article><article><span class="card-index">02</span><h3>Notícia com fonte</h3><p>Leia a matéria completa e compare a repercussão em mais de uma fonte.</p><a href="#noticias">Ver cobertura <span>→</span></a></article><article><span class="card-index">03</span><h3>Preço e risco</h3><p>Observe volatilidade, liquidez e seu limite de exposição antes de qualquer operação.</p><a href="#pares">Acompanhar pares <span>→</span></a></article></div>
+    </section>
+    <section class="market-grid" id="pares" aria-labelledby="pairs-title">
+      <div class="section-heading"><div><p class="eyebrow">FOREX EM FOCO</p><h2 id="pairs-title">Pares para acompanhar</h2></div><p>Preço, variação e gráfico vêm do provedor de mercado. A cotação pode apresentar atraso conforme a praça.</p></div>
+      <div class="chart-card"><div class="chart-toolbar"><span>PAINEL DE COTAÇÕES</span><span class="chart-note">EUR · GBP · JPY · AUD · CAD · CHF</span></div><div class="tradingview-widget-container market-overview-widget"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>{"colorTheme":"dark","dateRange":"12M","showChart":true,"locale":"br","isTransparent":true,"showSymbolLogo":false,"showFloatingTooltip":false,"width":"100%","height":"600","tabs":[{"title":"Forex","symbols":[{"s":"FX:EURUSD","d":"EUR / USD"},{"s":"FX:GBPUSD","d":"GBP / USD"},{"s":"FX:USDJPY","d":"USD / JPY"},{"s":"FX:AUDUSD","d":"AUD / USD"},{"s":"FX:USDCAD","d":"USD / CAD"},{"s":"FX:USDCHF","d":"USD / CHF"}]}]}</script></div></div>
+    </section>
     <section class="news-section" id="noticias" aria-labelledby="news-title">
-      <div class="section-heading"><div><p class="eyebrow">NOTÍCIAS RECENTES</p><h2 id="news-title">O que está movendo o câmbio</h2></div><p id="news-updated">Buscando manchetes…</p></div>
-      <div class="news-grid" id="news-list" aria-live="polite"><p class="news-loading">Carregando notícias recentes de mercado…</p></div>
-      <p class="news-fallback" id="news-fallback" hidden>As manchetes não ficaram disponíveis agora. Consulte <a href="https://www.reuters.com/markets/currencies/" target="_blank" rel="noopener noreferrer">Reuters Markets</a> ou <a href="https://www.fxstreet.com/news" target="_blank" rel="noopener noreferrer">FXStreet</a>.</p>
+      <div class="section-heading"><div><p class="eyebrow">SALA DE NOTÍCIAS</p><h2 id="news-title">O que está movendo o câmbio</h2></div><div class="news-status"><span id="news-updated">Buscando manchetes…</span><div class="news-filters" aria-label="Filtrar notícias"><button class="active" type="button" data-news-topic="mercado">Mercado</button><button type="button" data-news-topic="dolar">Dólar</button><button type="button" data-news-topic="bancos">Bancos centrais</button><button type="button" data-news-topic="brasil">Brasil</button></div></div></div>
+      <div class="news-grid" id="news-list" aria-live="polite"><p class="news-loading">Carregando notícias recentes de mercado…</p></div><p class="news-fallback" id="news-fallback" hidden>As manchetes não ficaram disponíveis agora. Consulte <a href="https://www.reuters.com/markets/currencies/" target="_blank" rel="noopener noreferrer">Reuters Markets</a> ou <a href="https://www.fxstreet.com/news" target="_blank" rel="noopener noreferrer">FXStreet</a>.</p>
     </section>
-
     <section class="calendar-section" id="agenda" aria-labelledby="calendar-title">
-      <div class="section-heading"><div><p class="eyebrow">AGENDA ECONÔMICA</p><h2 id="calendar-title">Eventos que merecem atenção</h2></div><p>Dados macroeconômicos podem aumentar a volatilidade. Confira o horário antes de operar.</p></div>
-      <div class="calendar-card"><div class="tradingview-widget-container calendar-widget"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>{"colorTheme":"dark","isTransparent":true,"width":"100%","height":"500","locale":"br","importanceFilter":"0,1","countryFilter":"us,eu,gb,jp,br"}</script></div></div>
+      <div class="section-heading"><div><p class="eyebrow">AGENDA ECONÔMICA</p><h2 id="calendar-title">Datas que mexem com o mercado</h2></div><p>Em dias de indicadores importantes, os spreads e as variações podem aumentar.</p></div>
+      <div class="calendar-card"><div class="calendar-card-top"><span>CALENDÁRIO GLOBAL</span><span>Filtro: EUA · Europa · Reino Unido · Japão · Brasil</span></div><div class="tradingview-widget-container calendar-widget"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>{"colorTheme":"dark","isTransparent":true,"width":"100%","height":"500","locale":"br","importanceFilter":"0,1","countryFilter":"us,eu,gb,jp,br"}</script></div></div>
     </section>
   </main>
-  <footer><p>Dados de mercado podem ter atraso conforme o provedor. Conteúdo informativo; decisões financeiras exigem avaliação própria.</p><a href="/">Voltar ao início</a></footer>
+  <footer><div><strong>KUTTENC INVESTINDO</strong><p>Dados de mercado podem ter atraso conforme o provedor. Conteúdo informativo, sem recomendação ou garantia de retorno.</p></div><a href="/">Voltar ao início <span>↗</span></a></footer>
   <script src="../assets/investindo.js" defer></script>
 </body>
 </html>
