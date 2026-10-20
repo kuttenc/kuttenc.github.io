@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06090f">
+  <meta name="description" content="Acompanhamento aberto de Forex, agenda econômica e notícias recentes.">
+  <link rel="canonical" href="https://kuttenc.github.io/investindo/">
+  <title>Investindo — mercado em acompanhamento</title>
+  <link rel="stylesheet" href="../assets/investindo.css">
+</head>
+<body>
+  <header class="market-header">
+    <a class="market-brand" href="/" aria-label="Página inicial"><span aria-hidden="true">↗</span> kuttenc</a>
+    <nav aria-label="Navegação"><a href="#pares">Forex</a><a href="#noticias">Notícias</a><a href="#agenda">Agenda</a></nav>
+  </header>
+  <main>
+    <section class="market-hero" aria-labelledby="market-title">
+      <p class="eyebrow">MERCADO ABERTO · SEM CADASTRO</p>
+      <h1 id="market-title">Forex em<br><em>acompanhamento.</em></h1>
+      <p class="market-intro">Cotações, contexto técnico e notícias recentes para acompanhar o mercado em um único lugar.</p>
+      <div class="market-status"><span class="live-dot" aria-hidden="true"></span><span id="market-clock">Carregando horário…</span><button id="refresh-news" type="button">Atualizar notícias</button></div>
+    </section>
+
+    <section class="ticker-section" aria-label="Cotações principais">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+        {"symbols":[{"proName":"FX_IDC:EURUSD","title":"EUR / USD"},{"proName":"FX_IDC:GBPUSD","title":"GBP / USD"},{"proName":"FX_IDC:USDJPY","title":"USD / JPY"},{"proName":"FX_IDC:AUDUSD","title":"AUD / USD"},{"proName":"FX_IDC:USDCAD","title":"USD / CAD"},{"proName":"FX_IDC:USDCHF","title":"USD / CHF"}],"showSymbolLogo":false,"isTransparent":true,"displayMode":"adaptive","colorTheme":"dark","locale":"br"}
+        </script>
+      </div>
+    </section>
+
+    <section class="market-grid" id="pares" aria-labelledby="pairs-title">
+      <div class="section-heading"><div><p class="eyebrow">PARES EM OBSERVAÇÃO</p><h2 id="pairs-title">Visão ampla do mercado</h2></div><p>Indicadores acompanham preço e tendência. Eles não garantem resultado ou retorno.</p></div>
+      <div class="chart-card">
+        <div class="tradingview-widget-container market-overview-widget">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+          {"colorTheme":"dark","dateRange":"12M","showChart":true,"locale":"br","isTransparent":true,"showSymbolLogo":false,"showFloatingTooltip":false,"width":"100%","height":"600","tabs":[{"title":"Forex","symbols":[{"s":"FX:EURUSD","d":"EUR / USD"},{"s":"FX:GBPUSD","d":"GBP / USD"},{"s":"FX:USDJPY","d":"USD / JPY"},{"s":"FX:AUDUSD","d":"AUD / USD"},{"s":"FX:USDCAD","d":"USD / CAD"},{"s":"FX:USDCHF","d":"USD / CHF"}]}]}
+          </script>
+        </div>
+      </div>
+    </section>
+
+    <section class="news-section" id="noticias" aria-labelledby="news-title">
+      <div class="section-heading"><div><p class="eyebrow">NOTÍCIAS RECENTES</p><h2 id="news-title">O que está movendo o câmbio</h2></div><p id="news-updated">Buscando manchetes…</p></div>
+      <div class="news-grid" id="news-list" aria-live="polite"><p class="news-loading">Carregando notícias recentes de mercado…</p></div>
+      <p class="news-fallback" id="news-fallback" hidden>As manchetes não ficaram disponíveis agora. Consulte <a href="https://www.reuters.com/markets/currencies/" target="_blank" rel="noopener noreferrer">Reuters Markets</a> ou <a href="https://www.fxstreet.com/news" target="_blank" rel="noopener noreferrer">FXStreet</a>.</p>
+    </section>
+
+    <section class="calendar-section" id="agenda" aria-labelledby="calendar-title">
+      <div class="section-heading"><div><p class="eyebrow">AGENDA ECONÔMICA</p><h2 id="calendar-title">Eventos que merecem atenção</h2></div><p>Dados macroeconômicos podem aumentar a volatilidade. Confira o horário antes de operar.</p></div>
+      <div class="calendar-card"><div class="tradingview-widget-container calendar-widget"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>{"colorTheme":"dark","isTransparent":true,"width":"100%","height":"500","locale":"br","importanceFilter":"0,1","countryFilter":"us,eu,gb,jp,br"}</script></div></div>
+    </section>
+  </main>
+  <footer><p>Dados de mercado podem ter atraso conforme o provedor. Conteúdo informativo; decisões financeiras exigem avaliação própria.</p><a href="/">Voltar ao início</a></footer>
+  <script src="../assets/investindo.js" defer></script>
+</body>
+</html>
