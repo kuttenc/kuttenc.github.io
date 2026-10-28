@@ -61,13 +61,13 @@
     P1: ['P1','Salão, caixa e rotinas locais.','Fluxo normal (simulado)','Pedidos, caixa e checklist','Associar fechamento e responsável'],
     P2: ['P2','Confeitaria, água e controle de validade.','Acompanhar filtro de água','Validade, fotos e pedidos','Ligar checklist anual do P2'],
     P3: ['P3','Operação local e pedidos.','Fluxo normal (simulado)','Pedidos e inventário','Cadastrar responsáveis'],
-    P4: ['P4','Operação local e pedidos.','Fluxo normal (simulado)','Pedidos e inventário','Cadastrar responsáveis'],
+    P4: ['P4','Bar do Bento e sala de ferramentas compartilhada.','Bento · responsável pelo bar (simulado)','Manutenção elétrica, hidráulica e civil','Ligar pedidos de manutenção'],
     P5: ['P5','Bar e abastecimento.','Fluxo normal (simulado)','Pedidos, bebidas e reposição','Ligar resumo diário'],
     P6: ['P6','Gerência, recebimento de itens e pedidos.','Marcio · gerente e recebimento (simulado)','Pedidos, conferência e inventário','Ligar recebimentos ao resumo diário'],
     P7: ['P7','Operação local e pedidos.','Fluxo normal (simulado)','Pedidos e inventário','Cadastrar responsáveis'],
     Peixaria: ['Peixaria','Produção, catálogo, lotes e validade.','Área principal (simulada)','Leitura EAN, fotos e etiquetas','Ligar Validade PT260'],
     Estoque: ['Estoque','Entradas, saídas e inventário.','Área estrutural','Movimentações e divergências','Ligar catálogo e conferência'],
-    Logística: ['Logística','Motoristas, rotas e comprovantes.','Área estrutural','Coletas, rotas e entregas','Ligar app do motorista']
+    Logística: ['Logística','Simone e Kotian são responsáveis. O andar superior abriga o TI e um depósito separado de equipamentos.','Simone e Kotian · responsáveis de logística','Rotas, computadores, periféricos e entregas','Ligar app do motorista']
   };
   const materials = { floor: new THREE.MeshStandardMaterial({ color:0x155c48, roughness:.82 }), wall: new THREE.MeshStandardMaterial({ color:0x1d7a61, transparent:true, opacity:.46, roughness:.5 }), accent: new THREE.MeshStandardMaterial({ color:0x27535c, transparent:true, opacity:.52 }), table: new THREE.MeshStandardMaterial({ color:0x765a36, roughness:.72 }), mint: new THREE.MeshStandardMaterial({ color:0x00bd83, emissive:0x003c27, emissiveIntensity:.7 }), yellow: new THREE.MeshStandardMaterial({ color:0xb68026, emissive:0x4e2b00, emissiveIntensity:.6 }) };
 
@@ -104,26 +104,84 @@
   function personLabel(name, role, color='#eafff6') {
     const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='rgba(3,18,13,.82)';ctx.fillRect(0,4,512,118);ctx.textAlign='center';ctx.fillStyle=color;ctx.font='700 42px Arial';ctx.fillText(name,256,51);ctx.fillStyle='#c4dfd4';ctx.font='600 25px Arial';ctx.fillText(role,256,93);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));sprite.scale.set(2.9,.72,1);sprite.position.y=2.25;return sprite;
   }
-  function sector(name,x,z,w,d,accent=false) {
+  function sector(name,x,z,w,d,accent=false,showSign=true) {
     const group=new THREE.Group();group.userData={area:name,bounds:{minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2}};group.position.set(x,0,z);
     const floor=new THREE.Mesh(new THREE.BoxGeometry(w,.24,d),(accent?materials.accent:materials.floor).clone());floor.position.y=0;floor.userData.area=name;group.userData.floor=floor;group.add(floor);
     const walls=[[-w/2+.12,1.25,0,.24,2.5,d],[w/2-.12,1.25,0,.24,2.5,d],[0,1.25,-d/2+.12,w,2.5,.24],[0,1.25,d/2-.12,w,2.5,.24]];
     walls.forEach(([a,b,c,ww,hh,dd])=>{const wall=new THREE.Mesh(new THREE.BoxGeometry(ww,hh,dd),materials.wall);wall.position.set(a,b,c);wall.userData.area=name;group.add(wall);});
-    const sign=label(name,accent?'#bce9ff':'#dffff1');sign.position.set(0,3.1,0);group.add(sign);
+    if(showSign){const sign=label(name,accent?'#bce9ff':'#dffff1');sign.position.set(0,3.1,0);group.add(sign);}
     scene.add(group);sectorMeshes.push(group);return group;
   }
   function table(x,z,area){const g=new THREE.Group();g.userData.area=area;const top=new THREE.Mesh(new THREE.BoxGeometry(1.6,.16,.8),materials.table);top.position.y=.72;top.castShadow=true;g.add(top);for(const dx of [-.65,.65])for(const dz of [-.28,.28]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.1,.7,.1),materials.table);leg.position.set(dx,.35,dz);g.add(leg);}g.position.set(x,0,z);scene.add(g);return g;}
-  function worker(x,z,area,name,role,shift=0,tint=0x00bd83){const g=new THREE.Group();g.userData={area,role:`${name} · ${role}`};const uniform=materials.mint.clone();uniform.color.setHex(tint);const body=new THREE.Mesh(new THREE.CylinderGeometry(.22,.27,.72,10),uniform);body.position.y=.9;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.22,10,10),new THREE.MeshStandardMaterial({color:0xffc89d,roughness:.8}));head.position.y=1.47;g.add(body,head);const armL=new THREE.Mesh(new THREE.BoxGeometry(.1,.55,.1),uniform),armR=armL.clone();armL.position.set(-.3,.98,0);armR.position.set(.3,.98,0);g.add(armL,armR,personLabel(name,role));g.position.set(x,0,z);scene.add(g);walkers.push({g,armL,armR,origin:new THREE.Vector3(x,0,z),phase:shift,area,role:`${name} · ${role}`});}
-  sector('P1',-10,6,5,5);sector('P2',-4,6,5,5);sector('P3',2,6,5,5);sector('P4',8,6,5,5);sector('P5',11,-1,5,6);sector('P6',5,-1,5,6);sector('P7',-1,-1,5,6);sector('Peixaria',-10,-4,7,7,true);sector('Estoque',-2,-8,7,5,true);sector('Logística',7,-8,7,5,true);
+  function worker(x,z,area,name,role,shift=0,tint=0x00bd83,elevation=0,wearCap=false){const g=new THREE.Group();g.userData={area,role:`${name} · ${role}`};const uniform=materials.mint.clone();uniform.color.setHex(tint);const skin=new THREE.MeshStandardMaterial({color:0xffc89d,roughness:.8});const body=new THREE.Mesh(new THREE.CylinderGeometry(.22,.27,.72,10),uniform);body.position.y=.9;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.22,10,10),skin);head.position.y=1.47;g.add(head);const armL=new THREE.Mesh(new THREE.BoxGeometry(.1,.55,.1),uniform),armR=armL.clone();armL.position.set(-.3,.98,0);armR.position.set(.3,.98,0);g.add(armL,armR,personLabel(name,role));if(wearCap){const capMat=new THREE.MeshStandardMaterial({color:0x1689a4,roughness:.65});const brim=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.055,12),capMat);brim.position.set(0,1.68,.05);g.add(brim);const crown=new THREE.Mesh(new THREE.SphereGeometry(.18,12,8,0,Math.PI*2,0,Math.PI/2),capMat);crown.position.set(0,1.69,0);g.add(crown);}g.position.set(x,elevation,z);scene.add(g);walkers.push({g,armL,armR,origin:new THREE.Vector3(x,elevation,z),phase:shift,area,role:`${name} · ${role}`});return g;}
+  function roomShell(area,role,x,z,w,d,floorY,floorColor,transparentFloor=false){
+    const group=new THREE.Group();group.userData={area,role};
+    const floorMaterial=new THREE.MeshStandardMaterial({color:floorColor,roughness:.88,transparent:transparentFloor,opacity:transparentFloor ? .68 : 1,depthWrite:!transparentFloor});const floor=new THREE.Mesh(new THREE.BoxGeometry(w,.14,d),floorMaterial);floor.position.y=floorY;floor.userData={area,role};group.add(floor);
+    const wallMaterial=new THREE.MeshStandardMaterial({color:0x7cae9d,transparent:true,opacity:.58,roughness:.65});const wallHeight=1.72,wallThickness=.11,wallY=floorY+wallHeight/2;
+    const walls=[[-w/2+wallThickness/2,wallY,0,wallThickness,wallHeight,d],[w/2-wallThickness/2,wallY,0,wallThickness,wallHeight,d],[0,wallY,-d/2+wallThickness/2,w,wallHeight,wallThickness]];
+    walls.forEach(([wx,wy,wz,ww,wh,wd])=>{const wall=new THREE.Mesh(new THREE.BoxGeometry(ww,wh,wd),wallMaterial);wall.position.set(wx,wy,wz);wall.userData={area,role};group.add(wall);});
+    const sign=personLabel(role.split(' · ')[0],role.split(' · ').slice(1).join(' · '),'#f4fff9');sign.position.set(0,floorY+1.82,d/2-.16);sign.scale.set(2.25,.56,1);sign.userData={area,role};group.add(sign);
+    group.position.set(x,0,z);scene.add(group);return group;
+  }
+  function addComputerDesk(x,z,floorY){
+    const g=new THREE.Group();const wood=new THREE.MeshStandardMaterial({color:0x775a3c,roughness:.78}),device=new THREE.MeshStandardMaterial({color:0x24363c,roughness:.55}),screen=new THREE.MeshStandardMaterial({color:0x54c9d5,emissive:0x12404c,emissiveIntensity:.7});
+    const top=new THREE.Mesh(new THREE.BoxGeometry(1.15,.12,.62),wood);top.position.y=.88;g.add(top);for(const dx of [-.48,.48])for(const dz of [-.23,.23]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.07,.84,.07),wood);leg.position.set(dx,.42,dz);g.add(leg);}
+    const display=new THREE.Mesh(new THREE.BoxGeometry(.44,.32,.055),device);display.position.set(-.1,1.1,-.2);g.add(display);const panel=new THREE.Mesh(new THREE.BoxGeometry(.38,.25,.018),screen);panel.position.set(-.1,1.1,-.166);g.add(panel);const stand=new THREE.Mesh(new THREE.BoxGeometry(.06,.12,.06),device);stand.position.set(-.1,.91,-.2);g.add(stand);const keyboard=new THREE.Mesh(new THREE.BoxGeometry(.38,.035,.13),device);keyboard.position.set(-.05,.97,.02);g.add(keyboard);const mouse=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),device);mouse.scale.set(.8,.45,1.2);mouse.position.set(.31,.98,.02);g.add(mouse);
+    g.position.set(x,floorY,z);scene.add(g);return g;
+  }
+  function addEquipmentShelf(x,z,floorY){
+    const g=new THREE.Group(),metal=new THREE.MeshStandardMaterial({color:0x91a6a2,metalness:.65,roughness:.4}),device=new THREE.MeshStandardMaterial({color:0x202d32,roughness:.6}),screen=new THREE.MeshStandardMaterial({color:0x3c9ea8,emissive:0x0d3439,emissiveIntensity:.55});
+    for(const dx of [-.52,.52]){const post=new THREE.Mesh(new THREE.BoxGeometry(.06,1.45,.06),metal);post.position.set(dx,.73,0);g.add(post);}
+    for(const y of [.28,.72,1.16]){const shelf=new THREE.Mesh(new THREE.BoxGeometry(1.18,.07,.45),metal);shelf.position.set(0,y,0);g.add(shelf);}
+    for(const [xOffset,y] of [[-.28,.47],[.25,.47],[-.28,.91],[.25,.91]]){const tower=new THREE.Mesh(new THREE.BoxGeometry(.22,.32,.25),device);tower.position.set(xOffset,y,.02);g.add(tower);const monitor=new THREE.Mesh(new THREE.BoxGeometry(.28,.2,.035),screen);monitor.position.set(xOffset,y+.18,-.08);g.add(monitor);}
+    for(const [xOffset,zOffset] of [[-.38,.12],[.12,.12]]){const mouse=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),device);mouse.scale.set(.8,.45,1.2);mouse.position.set(xOffset,.79,zOffset);g.add(mouse);}
+    g.position.set(x,floorY,z);scene.add(g);return g;
+  }
+  function addToolRack(x,z,floorY){
+    const g=new THREE.Group(),metal=new THREE.MeshStandardMaterial({color:0x8c9c96,metalness:.55,roughness:.5}),wood=new THREE.MeshStandardMaterial({color:0xa87542,roughness:.85}),steel=new THREE.MeshStandardMaterial({color:0xb8c3c0,metalness:.72,roughness:.36}),yellow=new THREE.MeshStandardMaterial({color:0xe8b746,roughness:.58});
+    for(const dx of [-.48,.48]){const post=new THREE.Mesh(new THREE.BoxGeometry(.07,1.65,.07),metal);post.position.set(dx,.82,0);g.add(post);}
+    for(const y of [.12,.58,1.04,1.5]){const shelf=new THREE.Mesh(new THREE.BoxGeometry(1.08,.07,.42),metal);shelf.position.set(0,y,0);g.add(shelf);}
+    for(const dx of [-.3,0,.3]){const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.04,.48,8),wood);handle.position.set(dx,.86,.02);g.add(handle);const head=new THREE.Mesh(new THREE.BoxGeometry(.28,.11,.13),steel);head.position.set(dx,.98,.02);g.add(head);}
+    const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.7,10),steel);pipe.rotation.z=Math.PI/2;pipe.position.set(0,.34,.05);g.add(pipe);const cableRoll=new THREE.Mesh(new THREE.TorusGeometry(.18,.045,6,16),yellow);cableRoll.rotation.x=Math.PI/2;cableRoll.position.set(0,1.28,.02);g.add(cableRoll);
+    g.position.set(x,floorY,z);scene.add(g);return g;
+  }
+  function addBarCounter(x,z,floorY){
+    const g=new THREE.Group(),wood=new THREE.MeshStandardMaterial({color:0x71452f,roughness:.75}),bottle=new THREE.MeshStandardMaterial({color:0x54b47a,roughness:.4});
+    const counter=new THREE.Mesh(new THREE.BoxGeometry(1.42,.82,.48),wood);counter.position.y=.52;g.add(counter);const top=new THREE.Mesh(new THREE.BoxGeometry(1.5,.1,.56),new THREE.MeshStandardMaterial({color:0xc79556,roughness:.6}));top.position.y=.98;g.add(top);
+    for(const dx of [-.42,0,.42]){const flask=new THREE.Mesh(new THREE.CylinderGeometry(.08,.105,.32,10),bottle);flask.position.set(dx,1.19,-.08);g.add(flask);const neck=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.12,8),bottle);neck.position.set(dx,1.39,-.08);g.add(neck);}
+    g.position.set(x,floorY,z);scene.add(g);return g;
+  }
+  function buildP4Rooms(){
+    roomShell('P4','Sala de manutenção · elétrica, hidráulica e civil',6.65,6,2.2,4.35,.15,0x4a5547);
+    roomShell('P4','Bar · Bento responsável',9.35,6,2.2,4.35,.15,0x5b3d31);
+    const divider=new THREE.Mesh(new THREE.BoxGeometry(.14,2.15,4.2),materials.wall.clone());divider.position.set(8,.15+1.075,6);divider.userData={area:'P4',role:'Divisão entre manutenção e bar'};scene.add(divider);
+    addToolRack(6.55,6.1,.23);addBarCounter(9.35,7.05,.15);
+  }
+  function buildLogisticsUpperFloor(){
+    const level=2.55;
+    roomShell('Logística','TI escritório · andar superior',5.3,-8,3.2,4.4,level,0x315c69,true);
+    roomShell('Logística','Depósito TI · computadores e periféricos',8.75,-8,3.2,4.4,level,0x3b5362,true);
+    const divider=new THREE.Mesh(new THREE.BoxGeometry(.12,1.72,4.25),materials.wall.clone());divider.position.set(7.025,level+.86,-8);divider.userData={area:'Logística',role:'Divisão entre escritório e depósito TI'};scene.add(divider);
+    addComputerDesk(5.8,-7.35,level+.08);addEquipmentShelf(8.05,-8.15,level+.08);addEquipmentShelf(9.45,-8.15,level+.08);
+    const ladderMat=new THREE.MeshStandardMaterial({color:0x9cb4ae,metalness:.72,roughness:.38});
+    for(const x of [3.9,4.18]){const rail=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,2.8,8),ladderMat);rail.position.set(x,1.47,-8.5);scene.add(rail);}
+    for(let i=0;i<8;i++){const rung=new THREE.Mesh(new THREE.CylinderGeometry(.027,.027,.33,8),ladderMat);rung.rotation.z=Math.PI/2;rung.position.set(4.04,.3+i*.36,-8.5);scene.add(rung);}
+  }
+  sector('P1',-10,6,5,5);sector('P2',-4,6,5,5);sector('P3',2,6,5,5);sector('P4',8,6,5,5,false,false);sector('P5',11,-1,5,6);sector('P6',5,-1,5,6);sector('P7',-1,-1,5,6);sector('Peixaria',-10,-4,7,7,true);sector('Estoque',-2,-8,7,5,true);sector('Logística',7,-8,7,5,true,false);
+  buildP4Rooms();buildLogisticsUpperFloor();
+  const logisticsSign=label('LOGÍSTICA','#bce9ff');logisticsSign.position.set(7,2.42,-5.34);logisticsSign.scale.set(3.2,.8,1);logisticsSign.userData={area:'Logística'};scene.add(logisticsSign);
   const roster=[
     ['P1','Alisson','Gerência'],['P1','Antonio','Cozinha'],['P1','Laura','Conferência'],['P1','Barman · 3450','Chefe de bar'],
     ['P2','Gabriel','Chefe de cozinha'],['P2','Maria','Cozinha'],['P2','Lia','Caixa'],['P2','Rodrigo','Confeitaria'],['P2','Rodolfo','Rotisseria'],['P2','Rafaela','Conferência'],['P2','Danilo · 7680','Bar'],
-    ['P3','Diego','Cozinha'],['P3','Equipe P3','Conferência'],['P4','João Gabriel','Responsável'],['P4','Bento','Bar'],['P5','Durval','Cozinha'],['P5','Camila','Bar'],['P6','Kayke','Bar'],['P6','Marcio','Gerente · recebimento'],['P7','Equipe P7','Operação'],
-    ['Peixaria','Carol','Despacho'],['Peixaria','Caroline','Produção'],['Peixaria','Equipe','Conferência'],['Estoque','Claudio','Bebidas'],['Estoque','Equipe','Conferência'],['Logística','Douglas','Logística'],['Logística','Motorista','Entrega'],['Logística','Equipe','Rota']
+    ['P3','Diego','Cozinha'],['P3','Equipe P3','Conferência'],['P5','Durval','Cozinha'],['P5','Camila','Bar'],['P6','Kayke','Bar'],['P6','Marcio','Gerente · recebimento'],['P7','Equipe P7','Operação'],
+    ['Peixaria','Carol','Despacho'],['Peixaria','Caroline','Produção'],['Peixaria','Equipe','Conferência'],['Estoque','Claudio','Bebidas'],['Estoque','Equipe','Conferência'],['Logística','Douglas','Logística'],['Logística','Motorista','Entrega'],['Logística','Equipe','Rota'],['Logística','Simone','Responsável de logística'],['Logística','Kotian','Responsável de logística']
   ];
   const zones={P1:[-10,6,0x00bd83],P2:[-4,6,0xffbd45],P3:[2,6,0x00bd83],P4:[8,6,0x00bd83],P5:[11,-1,0x00bd83],P6:[5,-1,0x00bd83],P7:[-1,-1,0x00bd83],Peixaria:[-10,-4,0x48a7ff],Estoque:[-2,-8,0x48a7ff],Logística:[7,-8,0x48a7ff]};
   const placed=new Set();
-  roster.forEach(([area,name,role],index)=>{const [x,z,tint]=zones[area];const inArea=roster.filter(item=>item[0]===area).indexOf(roster[index]);const col=inArea%3,row=Math.floor(inArea/3);if(!placed.has(area)){table(x-.8,z-.5,area);placed.add(area);}worker(x+(col-1)*.85,z+(row-.5)*.9,area,name,role,index*.73,tint);});
+  roster.forEach(([area,name,role],index)=>{const [x,z,tint]=zones[area];const inArea=roster.filter(item=>item[0]===area).indexOf(roster[index]);const col=inArea%3,row=Math.floor(inArea/3);if(!placed.has(area)){if(area!=='P4')table(x-.8,z-.5,area);placed.add(area);}worker(x+(col-1)*.85,z+(row-.5)*.9,area,name,role,index*.73,tint);});
+  worker(5.95,7.18,'P4','João Gabriel','Responsável operacional',26,0x00bd83);
+  worker(4.48,-8.45,'Logística','Fabio','TI · escritório superior',27,0x1689a4,2.62,true);
+  worker(9.35,5.72,'P4','Bento','Responsável pelo bar',28,0xffbd45);
   peopleCount.textContent=walkers.length;
 
   function car(color, route, driverName, destinations, offset=0){
