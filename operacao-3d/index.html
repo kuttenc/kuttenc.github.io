@@ -14,13 +14,13 @@
       <div class="mode"><i></i><span>Simulação visual</span><small id="clock"></small></div>
     </header>
     <section class="toolbar">
-      <div class="hint">Arraste para girar · roda do mouse para aproximar · clique em um setor</div><div class="cycle" id="cycleStatus">Rotas simuladas iniciando…</div>
+      <div class="hint">Arraste com um dedo para girar · pinça para zoom · arraste com dois dedos para mover · roda do mouse para zoom</div><div class="cycle" id="cycleStatus">Rotas simuladas iniciando…</div>
       <button id="resetView">Centralizar maquete</button>
       <button id="toggleMotion">Pausar pessoas</button>
     </section>
     <section class="layout">
       <div class="scene-card">
-        <canvas id="scene" aria-label="Maquete 3D clicável com o Supermercado Shibata, restaurante P6, peixaria, depósito e ruas da operação O Peixeiro"></canvas>
+        <canvas id="scene" aria-label="Maquete 3D. No celular, arraste um dedo para girar, use dois dedos para zoom e deslocamento. Toque em um setor para ver detalhes."></canvas>
         <div class="scene-note" role="status" aria-live="polite">INICIALIZANDO MAQUETE 3D…</div>
         <section class="daily-event" aria-live="polite" aria-label="Simulação do relatório de hoje">
           <small id="dailyEventTime">28/10/2026 · SIMULAÇÃO DE 20 SEGUNDOS</small>
@@ -42,6 +42,6 @@
   <script src="opeixeiro-auth.js"></script>
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
   <script>window.OPEIXEIRO_SUPABASE_URL='https://suipuquznkksgrkchqrv.supabase.co';window.OPEIXEIRO_SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1aXB1cXV6bmtrc2dya2NocXJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc4NTksImV4cCI6MjA5NDk0Mzg1OX0.YF-_OfI6SC3aJvob6VB4C4qz3GXaUaAuezOg5eV1_GE';</script>
-  <script src="app.js?v=traffic-20261028-6"></script>
+  <script src="app.js?v=camera-20261028-1"></script>
 </body>
 </html>
