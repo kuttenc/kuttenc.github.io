@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>O Peixeiro · Centro de Operação 3D</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app">
+    <header class="topbar">
+      <div><p>O PEIXEIRO · GÊMEO OPERACIONAL</p><h1>Centro de operação 3D</h1></div>
+      <div class="mode"><i></i><span>Simulação visual</span><small id="clock"></small></div>
+    </header>
+    <section class="toolbar">
+      <div class="hint">Arraste para girar · roda do mouse para aproximar · clique em um setor</div><div class="cycle" id="cycleStatus">Rotas simuladas iniciando…</div>
+      <button id="resetView">Centralizar maquete</button>
+      <button id="toggleMotion">Pausar pessoas</button>
+    </section>
+    <section class="layout">
+      <div class="scene-card">
+        <canvas id="scene" aria-label="Maquete 3D clicável com setores, depósito e ruas da operação O Peixeiro"></canvas>
+        <div class="scene-note" role="status" aria-live="polite">INICIALIZANDO MAQUETE 3D…</div>
+        <section class="daily-event" aria-live="polite" aria-label="Simulação do relatório de hoje">
+          <small id="dailyEventTime">28/10/2026 · SIMULAÇÃO DE 20 SEGUNDOS</small>
+          <strong id="dailyEventTitle">Preparando rota do dia</strong>
+          <span id="dailyEventDetail">Pedidos, conferência de fotos e entregas.</span>
+        </section>
+        <div class="legend"><span class="ok">●</span> fluxo normal <span class="attention">●</span> acompanhar <span class="base">●</span> área estrutural</div>
+      </div>
+      <aside class="panel" aria-live="polite">
+        <p class="eyebrow">SETOR SELECIONADO</p><h2 id="areaTitle">Visão geral</h2><p id="areaDescription">Clique em um setor dentro da maquete para abrir sua ficha.</p>
+        <dl><div><dt>Estado visual</dt><dd id="areaState">Maquete em preparação</dd></div><div><dt>Quando ligar ao sistema</dt><dd id="areaData">Pedidos, validade, fotos e entregas autorizadas.</dd></div><div><dt>Próxima integração</dt><dd id="areaNext">Leitura protegida do Supabase</dd></div></dl>
+        <div class="numbers"><div><b id="peopleCount">0</b><span>personagens</span></div><div><b id="vehicleCount">0</b><span>veículos</span></div><div><b>10</b><span>setores</span></div></div>
+        <section class="access" id="accessBox"><b>Dados reais da chefia</b><p>Entre com o perfil administrativo para carregar o resumo privado do Supabase.</p><select id="liveProfile"><option>Carregando perfis…</option></select><input id="livePassword" type="password" autocomplete="current-password" placeholder="Senha administrativa" /><button id="liveLogin">Carregar dados reais</button><small id="liveStatus"></small></section>
+      </aside>
+    </section>
+    <footer>Simulação de 20 segundos baseada no relatório de 28/10/2026. Os veículos seguem as rotas e podem se atravessar sem travar; prédios e setores continuam bloqueando a passagem. É uma reconstituição visual, não rastreamento em tempo real.</footer>
+  </main>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="opeixeiro-auth.js"></script>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+  <script>window.OPEIXEIRO_SUPABASE_URL='https://suipuquznkksgrkchqrv.supabase.co';window.OPEIXEIRO_SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1aXB1cXV6bmtrc2dya2NocXJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc4NTksImV4cCI6MjA5NDk0Mzg1OX0.YF-_OfI6SC3aJvob6VB4C4qz3GXaUaAuezOg5eV1_GE';</script>
+  <script src="app.js?v=traffic-20261028-4"></script>
+</body>
+</html>
