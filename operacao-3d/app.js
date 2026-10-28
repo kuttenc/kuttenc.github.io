@@ -32,11 +32,11 @@
   renderer.setPixelRatio(1);
   renderer.shadowMap.enabled = false;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x07120e, 26, 60);
-  const camera = new THREE.PerspectiveCamera(42, 1, .1, 100);
+  scene.fog = new THREE.Fog(0x07120e, 48, 112);
+  const camera = new THREE.PerspectiveCamera(42, 1, .1, 180);
   const defaultCamera = new THREE.Vector3(21, 22, 28);
   camera.position.copy(defaultCamera);
-  const target = new THREE.Vector3(0, 0, 0);
+  const target = new THREE.Vector3(9.5, 0, 0);
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const walkers = [];
@@ -55,7 +55,8 @@
   const liveStatus = document.querySelector('#liveStatus');
   const liveLogin = document.querySelector('#liveLogin');
   const setLiveStatus = (message, error=false) => { liveStatus.textContent=message;liveStatus.className=error?'error':'ok'; };
-  let motion = true, dragging = false, moved = false, previous = { x: 0, y: 0 }, orbit = { theta: .65, phi: .65, radius: 38 };
+  const defaultOrbitRadius=window.matchMedia('(max-width:640px)').matches?88:59;
+  let motion = true, dragging = false, moved = false, previous = { x: 0, y: 0 }, orbit = { theta: .65, phi: .65, radius: defaultOrbitRadius };
 
   const info = {
     P1: ['P1','Salão, caixa e rotinas locais.','Fluxo normal (simulado)','Pedidos, caixa e checklist','Associar fechamento e responsável'],
@@ -63,9 +64,11 @@
     P3: ['P3','Operação local e pedidos.','Fluxo normal (simulado)','Pedidos e inventário','Cadastrar responsáveis'],
     P4: ['P4','Bar do Bento e sala de ferramentas compartilhada.','Bento · responsável pelo bar (simulado)','Manutenção elétrica, hidráulica e civil','Ligar pedidos de manutenção'],
     P5: ['P5','Bar e abastecimento.','Fluxo normal (simulado)','Pedidos, bebidas e reposição','Ligar resumo diário'],
-    P6: ['P6','Gerência, recebimento de itens e pedidos.','Marcio · gerente e recebimento (simulado)','Pedidos, conferência e inventário','Ligar recebimentos ao resumo diário'],
+    P6: ['P6 · Restaurante','Restaurante dentro do Supermercado Shibata. A peixaria do mercado é outro setor.','Marcio · gerente e recebimento (simulado)','Pedidos, conferência e inventário','Ligar recebimentos ao resumo diário'],
     P7: ['P7','Operação local e pedidos.','Fluxo normal (simulado)','Pedidos e inventário','Cadastrar responsáveis'],
-    Peixaria: ['Peixaria','Produção, catálogo, lotes e validade.','Área principal (simulada)','Leitura EAN, fotos e etiquetas','Ligar Validade PT260'],
+    Peixaria: ['Peixaria central','Produção, catálogo, lotes e validade. Abastece também a Peixaria Shibata.','Área principal (simulada)','Leitura EAN, fotos e etiquetas','Ligar Validade PT260'],
+    'Peixaria Shibata': ['Peixaria Shibata','Peixaria própria do supermercado, separada do restaurante P6. Recebe itens da peixaria central.','Abastecimento entre peixarias (simulado)','Recebimento, exposição e inventário','Ligar recebimentos ao resumo diário'],
+    'Supermercado Shibata': ['Supermercado Shibata','O P6 fica dentro do mercado como restaurante. A peixaria do mercado ocupa uma área independente.','Mercado · P6 e peixaria em setores separados','Acesso, corredores e entregas','Ligar entregas entre unidades'],
     Estoque: ['Estoque','Entradas, saídas e inventário.','Área estrutural','Movimentações e divergências','Ligar catálogo e conferência'],
     Logística: ['Logística','Simone e Kotian são responsáveis. O andar superior abriga o TI e um depósito separado de equipamentos.','Simone e Kotian · responsáveis de logística','Rotas, computadores, periféricos e entregas','Ligar app do motorista']
   };
@@ -73,8 +76,8 @@
 
   scene.add(new THREE.HemisphereLight(0xb9f7de,0x07120e,2.8));
   const sun = new THREE.DirectionalLight(0xdcfff1,2.0); sun.position.set(12,25,9); scene.add(sun);
-  const base = new THREE.Mesh(new THREE.BoxGeometry(32,.8,24),new THREE.MeshStandardMaterial({color:0x0f3027,roughness:.9})); base.position.y=-.5;base.receiveShadow=true;scene.add(base);
-  const grid = new THREE.GridHelper(70,30,0x286e58,0x102d24);grid.position.y=-.88;scene.add(grid);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(56,.8,34),new THREE.MeshStandardMaterial({color:0x0f3027,roughness:.9})); base.position.set(9.5,-.5,0);base.receiveShadow=true;scene.add(base);
+  const grid = new THREE.GridHelper(90,45,0x286e58,0x102d24);grid.position.set(9.5,-.88,0);scene.add(grid);
   const asphalt = new THREE.MeshStandardMaterial({color:0x26363b,roughness:.94});
   const roadPaint = new THREE.MeshStandardMaterial({color:0xc8d4c7,roughness:.8});
   const roadCenter = new THREE.MeshStandardMaterial({color:0xe4bd5d,roughness:.8});
@@ -97,6 +100,12 @@
   roadSegment(14.5,9.25,14.5,-11.25,1.35);
   roadSegment(2,2.75,2,-11.25,.95);
   roadSegment(5,2.75,5,9.25,.95);
+  roadSegment(14.5,0,16.5,0,2.2);
+  roadSegment(16.5,0,33,0,1.8);
+  roadSegment(18.3,0,18.3,-6,1.35);
+  roadSegment(33,0,33,5.5,1.35);
+  roadSegment(33,5.5,32.3,5.5,1.35);
+  roadSegment(-14.5,-4,-14.3,-4,1.35);
 
   function label(text, color= '#dffff1') {
     const c=document.createElement('canvas'); c.width=512;c.height=128;const x=c.getContext('2d');x.font='700 52px Arial';x.textAlign='center';x.fillStyle='rgba(4,18,13,.78)';x.fillRect(0,10,512,100);x.fillStyle=color;x.fillText(text,256,78);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));sprite.scale.set(4.4,1.1,1);return sprite;
@@ -111,6 +120,29 @@
     walls.forEach(([a,b,c,ww,hh,dd])=>{const wall=new THREE.Mesh(new THREE.BoxGeometry(ww,hh,dd),materials.wall);wall.position.set(a,b,c);wall.userData.area=name;group.add(wall);});
     if(showSign){const sign=label(name,accent?'#bce9ff':'#dffff1');sign.position.set(0,3.1,0);group.add(sign);}
     scene.add(group);sectorMeshes.push(group);return group;
+  }
+  function buildSupermarket(){
+    const area='Supermercado Shibata',cx=25.5,cz=0,w=18,d=27,left=cx-w/2,right=cx+w/2,front=cz+d/2,back=cz-d/2;
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(w,.16,d),new THREE.MeshStandardMaterial({color:0x243c37,roughness:.86}));floor.position.set(cx,-.17,cz);floor.userData={area};scene.add(floor);
+    const glass=new THREE.MeshStandardMaterial({color:0x74c8b1,transparent:true,opacity:.22,roughness:.24,metalness:.15,depthWrite:false});
+    const wall=(x,z,length,height,thickness,alongZ=false)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(alongZ?thickness:length,height,alongZ?length:thickness),glass);mesh.position.set(x,height/2-.08,z);mesh.userData={area};scene.add(mesh);};
+    wall(left,-7.7,11.6,4.2,.18,true);wall(left,7.7,11.6,4.2,.18,true);
+    wall(right,0,d,4.2,.18,true);wall(cx,back,w,4.2,.18);wall(cx,front,w,4.2,.18);
+    const lintel=new THREE.Mesh(new THREE.BoxGeometry(3.6,.38,.3),new THREE.MeshStandardMaterial({color:0x11785b,emissive:0x063c2a,emissiveIntensity:.8}));lintel.position.set(left,3.78,0);lintel.userData={area};scene.add(lintel);
+    const marketSign=label('SUPERMERCADO SHIBATA','#f8fff8');marketSign.position.set(cx,4.65,front);marketSign.scale.set(7.4,1.45,1);marketSign.userData={area};scene.add(marketSign);
+    const entrance=label('ENTRADA','#c5ffe9');entrance.position.set(left+.8,2.65,0);entrance.scale.set(2.6,.65,1);entrance.userData={area};scene.add(entrance);
+    const aisleMetal=new THREE.MeshStandardMaterial({color:0x78948b,metalness:.28,roughness:.58});
+    const productColors=[0xd18b4e,0x5c93b8,0xb0a64e,0xb45e67];
+    function aisle(x,z){
+      const rack=new THREE.Group();rack.userData={area,role:'Corredor de produtos do supermercado'};
+      for(const dx of [-.48,.48]){const upright=new THREE.Mesh(new THREE.BoxGeometry(.07,1.5,.07),aisleMetal);upright.position.set(dx,.75,0);rack.add(upright);}
+      for(const y of [.28,.76,1.23]){const shelf=new THREE.Mesh(new THREE.BoxGeometry(1.05,.075,3.5),aisleMetal);shelf.position.set(0,y,0);rack.add(shelf);}
+      for(let row=0;row<3;row++)for(let col=0;col<5;col++){const box=new THREE.Mesh(new THREE.BoxGeometry(.22,.28,.28),new THREE.MeshStandardMaterial({color:productColors[(row+col)%productColors.length],roughness:.7}));box.position.set(-.32+row*.32,.47+Math.floor(col/3)*.48,-1.28+(col%3)*.58);rack.add(box);}
+      rack.position.set(x,0,z);scene.add(rack);
+    }
+    aisle(27,-10.7);aisle(30.1,-10.7);aisle(27,-4.1);aisle(30.1,-4.1);
+    const checkoutMat=new THREE.MeshStandardMaterial({color:0x436d5c,roughness:.72});
+    const checkout=new THREE.Mesh(new THREE.BoxGeometry(2.4,.82,.9),checkoutMat);checkout.position.set(19.4,.34,8.8);checkout.userData={area,role:'Caixas do supermercado'};scene.add(checkout);
   }
   function table(x,z,area){const g=new THREE.Group();g.userData.area=area;const top=new THREE.Mesh(new THREE.BoxGeometry(1.6,.16,.8),materials.table);top.position.y=.72;top.castShadow=true;g.add(top);for(const dx of [-.65,.65])for(const dz of [-.28,.28]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.1,.7,.1),materials.table);leg.position.set(dx,.35,dz);g.add(leg);}g.position.set(x,0,z);scene.add(g);return g;}
   function worker(x,z,area,name,role,shift=0,tint=0x00bd83,elevation=0,wearCap=false){const g=new THREE.Group();g.userData={area,role:`${name} · ${role}`};const uniform=materials.mint.clone();uniform.color.setHex(tint);const skin=new THREE.MeshStandardMaterial({color:0xffc89d,roughness:.8});const body=new THREE.Mesh(new THREE.CylinderGeometry(.22,.27,.72,10),uniform);body.position.y=.9;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.22,10,10),skin);head.position.y=1.47;g.add(head);const armL=new THREE.Mesh(new THREE.BoxGeometry(.1,.55,.1),uniform),armR=armL.clone();armL.position.set(-.3,.98,0);armR.position.set(.3,.98,0);g.add(armL,armR,personLabel(name,role));if(wearCap){const capMat=new THREE.MeshStandardMaterial({color:0x1689a4,roughness:.65});const brim=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.055,12),capMat);brim.position.set(0,1.68,.05);g.add(brim);const crown=new THREE.Mesh(new THREE.SphereGeometry(.18,12,8,0,Math.PI*2,0,Math.PI/2),capMat);crown.position.set(0,1.69,0);g.add(crown);}g.position.set(x,elevation,z);scene.add(g);walkers.push({g,armL,armR,origin:new THREE.Vector3(x,elevation,z),phase:shift,area,role:`${name} · ${role}`});return g;}
@@ -167,8 +199,11 @@
     for(const x of [3.9,4.18]){const rail=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,2.8,8),ladderMat);rail.position.set(x,1.47,-8.5);scene.add(rail);}
     for(let i=0;i<8;i++){const rung=new THREE.Mesh(new THREE.CylinderGeometry(.027,.027,.33,8),ladderMat);rung.rotation.z=Math.PI/2;rung.position.set(4.04,.3+i*.36,-8.5);scene.add(rung);}
   }
-  sector('P1',-10,6,5,5);sector('P2',-4,6,5,5);sector('P3',2,6,5,5);sector('P4',8,6,5,5,false,false);sector('P5',11,-1,5,6);sector('P6',5,-1,5,6);sector('P7',-1,-1,5,6);sector('Peixaria',-10,-4,7,7,true);sector('Estoque',-2,-8,7,5,true);sector('Logística',7,-8,7,5,true,false);
+  sector('P1',-10,6,5,5);sector('P2',-4,6,5,5);sector('P3',2,6,5,5);sector('P4',8,6,5,5,false,false);sector('P5',11,-1,5,6);sector('P6',22,-6,6,6,false,false);sector('P7',-1,-1,5,6);sector('Peixaria',-10,-4,7,7,true);sector('Estoque',-2,-8,7,5,true);sector('Logística',7,-8,7,5,true,false);
+  buildSupermarket();sector('Peixaria Shibata',28.5,5.5,6,6,true,false);table(28.5,7.55,'Peixaria Shibata');
+  const restaurantSign=personLabel('P6 · RESTAURANTE','dentro do Supermercado Shibata','#f8fff8');restaurantSign.position.set(22,3.15,-6);restaurantSign.scale.set(3.6,.9,1);restaurantSign.userData={area:'P6'};scene.add(restaurantSign);
   buildP4Rooms();buildLogisticsUpperFloor();
+  const fishSupplySign=personLabel('PEIXARIA SHIBATA','setor do supermercado','#c9eaff');fishSupplySign.position.set(28.5,3.35,5.5);fishSupplySign.scale.set(3.8,.95,1);fishSupplySign.userData={area:'Peixaria Shibata'};scene.add(fishSupplySign);
   const logisticsSign=label('LOGÍSTICA','#bce9ff');logisticsSign.position.set(7,2.42,-5.34);logisticsSign.scale.set(3.2,.8,1);logisticsSign.userData={area:'Logística'};scene.add(logisticsSign);
   const roster=[
     ['P1','Alisson','Gerência'],['P1','Antonio','Cozinha'],['P1','Laura','Conferência'],['P1','Barman · 3450','Chefe de bar'],
@@ -176,7 +211,7 @@
     ['P3','Diego','Cozinha'],['P3','Equipe P3','Conferência'],['P5','Durval','Cozinha'],['P5','Camila','Bar'],['P6','Kayke','Bar'],['P6','Marcio','Gerente · recebimento'],['P7','Equipe P7','Operação'],
     ['Peixaria','Carol','Despacho'],['Peixaria','Caroline','Produção'],['Peixaria','Equipe','Conferência'],['Estoque','Claudio','Bebidas'],['Estoque','Equipe','Conferência'],['Logística','Douglas','Logística'],['Logística','Motorista','Entrega'],['Logística','Equipe','Rota'],['Logística','Simone','Responsável de logística'],['Logística','Kotian','Responsável de logística']
   ];
-  const zones={P1:[-10,6,0x00bd83],P2:[-4,6,0xffbd45],P3:[2,6,0x00bd83],P4:[8,6,0x00bd83],P5:[11,-1,0x00bd83],P6:[5,-1,0x00bd83],P7:[-1,-1,0x00bd83],Peixaria:[-10,-4,0x48a7ff],Estoque:[-2,-8,0x48a7ff],Logística:[7,-8,0x48a7ff]};
+  const zones={P1:[-10,6,0x00bd83],P2:[-4,6,0xffbd45],P3:[2,6,0x00bd83],P4:[8,6,0x00bd83],P5:[11,-1,0x00bd83],P6:[22,-6,0x00bd83],P7:[-1,-1,0x00bd83],Peixaria:[-10,-4,0x48a7ff],Estoque:[-2,-8,0x48a7ff],Logística:[7,-8,0x48a7ff]};
   const placed=new Set();
   roster.forEach(([area,name,role],index)=>{const [x,z,tint]=zones[area];const inArea=roster.filter(item=>item[0]===area).indexOf(roster[index]);const col=inArea%3,row=Math.floor(inArea/3);if(!placed.has(area)){if(area!=='P4')table(x-.8,z-.5,area);placed.add(area);}worker(x+(col-1)*.85,z+(row-.5)*.9,area,name,role,index*.73,tint);});
   worker(5.95,7.18,'P4','João Gabriel','Responsável operacional',26,0x00bd83);
@@ -200,8 +235,8 @@
     g.position.copy(vehicle.currentPose.position);g.position.y=.04;g.rotation.y=Math.atan2(vehicle.currentPose.direction.x,vehicle.currentPose.direction.z);
     scene.add(g);vehicles.push(vehicle);
   }
-  const depotGate=new THREE.Vector3(7,0,-11.25), eastBottom=new THREE.Vector3(14.5,0,-11.25), eastMiddle=new THREE.Vector3(14.5,0,2.75), eastTop=new THREE.Vector3(14.5,0,9.25), p1Gate=new THREE.Vector3(-10,0,2.75), p3Gate=new THREE.Vector3(2,0,2.75), p4Gate=new THREE.Vector3(8,0,9.25), centralBottom=new THREE.Vector3(2,0,-11.25), p6Gate=new THREE.Vector3(2,0,-4.75);
-  car(0xffbd45,[depotGate,eastBottom,eastMiddle,p3Gate,eastMiddle,eastBottom,depotGate,centralBottom,p6Gate,centralBottom,depotGate],'Edimar','P3 e P6',0);
+  const depotGate=new THREE.Vector3(7,0,-11.25), eastBottom=new THREE.Vector3(14.5,0,-11.25), eastMiddle=new THREE.Vector3(14.5,0,2.75), eastTop=new THREE.Vector3(14.5,0,9.25), p1Gate=new THREE.Vector3(-10,0,2.75), p3Gate=new THREE.Vector3(2,0,2.75), p4Gate=new THREE.Vector3(8,0,9.25), centralBottom=new THREE.Vector3(2,0,-11.25), centralFishGate=new THREE.Vector3(-14.3,0,-4), westBottom=new THREE.Vector3(-14.5,0,-11.25), westMiddle=new THREE.Vector3(-14.5,0,-4), eastDoor=new THREE.Vector3(14.5,0,0), marketGate=new THREE.Vector3(16.5,0,0), p6Driveway=new THREE.Vector3(18.3,0,0), p6Gate=new THREE.Vector3(18.3,0,-6), fishAisle=new THREE.Vector3(33,0,0), fishApproach=new THREE.Vector3(33,0,5.5), shibataFishGate=new THREE.Vector3(32.3,0,5.5);
+  car(0xffbd45,[depotGate,eastBottom,eastMiddle,p3Gate,eastMiddle,eastBottom,depotGate,centralBottom,westBottom,westMiddle,centralFishGate,westMiddle,westBottom,centralBottom,depotGate,eastBottom,eastDoor,marketGate,p6Driveway,p6Gate,p6Driveway,marketGate,fishAisle,fishApproach,shibataFishGate,fishApproach,fishAisle,marketGate,eastDoor,eastBottom,depotGate],'Edimar','P3, P6 e Peixaria Shibata',0);
   car(0x45b3ff,[depotGate,eastBottom,eastMiddle,p1Gate,eastMiddle,eastBottom,depotGate],'Motorista 2','P1',5.5);
   car(0xff5f70,[depotGate,eastBottom,eastTop,p4Gate,eastTop,eastBottom,depotGate],'Motorista 3','P4',11);
   vehicleCount.textContent=vehicles.length;
@@ -209,6 +244,7 @@
   const reportEvents = [
     { time:'00:23', title:'Lista de pedidos do P3', detail:'Pedido do setor entra na fila de separação.', area:'P3' },
     { time:'08:26–11:38', title:'13 fotos recebidas', detail:'Itens enviados no grupo Pedidos Recebidos para conferência.', area:'Peixaria' },
+    { time:'12:45', title:'Entrega entre peixarias', detail:'A peixaria central abastece a Peixaria Shibata, setor separado do restaurante P6.', area:'Peixaria Shibata' },
     { time:'13:10–13:25', title:'Reposição urgente no P1', detail:'Gelo solicitado; em seguida, pedido de laranja.', area:'P1' },
     { time:'16:55–16:58', title:'Reposição urgente no P4', detail:'Pedido do setor seguido pela solicitação de gelo.', area:'P4' },
     { time:'17:11', title:'Foto registrada no grupo Bar', detail:'Registro visual anexado após a movimentação.', area:'P4' },
@@ -273,14 +309,14 @@
   function choose(area,role=''){const item=info[area];if(!item)return;const liveArea=live.areas[area.toUpperCase()]||live.areas[area]||null;title.textContent=item[0];description.textContent=role?`${item[1]} Personagem selecionado: ${role}.` : item[1];state.textContent=liveArea?`${liveArea.orders} pedido(s) nos últimos 7 dias` : item[2];data.textContent=role?`${role} · vínculo individual permanece protegido no Supabase.`:liveArea?`${liveArea.workers} função(ões) vinculada(s) · status: ${Object.entries(liveArea.order_statuses||{}).map(([key,value])=>`${key} ${value}`).join(', ')||'sem pedidos no período'}`:item[3];next.textContent=live.loaded?'Dados carregados com sessão administrativa. Atualização automática a cada 30 segundos.':item[4];}
   async function invokeLive(body){const {data,error}=await db.functions.invoke('opeixeiro-auth',{body});if(!error)return data;let message='Não foi possível carregar os dados.';try{const detail=await error.context?.clone?.().json();if(detail?.error)message=detail.error;}catch(_){}throw new Error(message);}
   async function loadProfiles(){if(!db||!window.OpeixeiroAuth){setLiveStatus('A autenticação administrativa não foi carregada.',true);return;}try{const profiles=await window.OpeixeiroAuth.listProfiles(db,'panel');liveProfile.replaceChildren(new Option('Selecione seu perfil',''));profiles.forEach(profile=>liveProfile.add(new Option(profile.display_name,profile.display_name)));setLiveStatus('Entre com o perfil administrativo para carregar os dados reais.');}catch(error){setLiveStatus(error.message||'Não foi possível carregar os perfis.',true);}}
-  function applyLiveData(){sectorMeshes.forEach(group=>{const key=group.userData.area==='Logística'?'LOGISTICA':String(group.userData.area).toUpperCase();const area=live.areas[key];if(!group.userData.floor||!area)return;const material=group.userData.floor.material;if(area.orders>0){material.color.setHex(0xb68026);material.emissive?.setHex(0x472a00);material.emissiveIntensity=.38;}else{material.color.setHex(key==='PEIXARIA'||key==='ESTOQUE'||key==='LOGISTICA'?0x27535c:0x155c48);material.emissive?.setHex(0x000000);material.emissiveIntensity=0;}});}
+  function applyLiveData(){sectorMeshes.forEach(group=>{const key=group.userData.area==='Logística'?'LOGISTICA':String(group.userData.area).toUpperCase();const area=live.areas[key];if(!group.userData.floor||!area)return;const material=group.userData.floor.material;if(area.orders>0){material.color.setHex(0xb68026);material.emissive?.setHex(0x472a00);material.emissiveIntensity=.38;}else{material.color.setHex(key.startsWith('PEIXARIA')||key==='ESTOQUE'||key==='LOGISTICA'?0x27535c:0x155c48);material.emissive?.setHex(0x000000);material.emissiveIntensity=0;}});}
   async function refreshDashboard(){const data=await invokeLive({action:'get_3d_dashboard'});live.loaded=true;live.areas=data.areas||{};live.dashboard=data;applyLiveData();const dispatch=Object.entries(data.dispatches||{}).map(([key,value])=>`${key}: ${value}`).join(' · ')||'sem despachos nos últimos 7 dias';setLiveStatus(`Resumo real carregado · despachos: ${dispatch}`);choose(title.textContent==='Visão geral'?'Logística':title.textContent);}
   async function loginLive(){const displayName=liveProfile.value;if(!displayName)return setLiveStatus('Selecione o perfil administrativo.',true);liveLogin.disabled=true;setLiveStatus('Autenticando e carregando dados…');try{const actor=await window.OpeixeiroAuth.signIn(db,'panel',displayName,livePassword.value);livePassword.value='';if(!actor.is_admin){await db.auth.signOut();throw new Error('Este perfil não tem permissão administrativa para a maquete.');}await refreshDashboard();liveLogin.textContent='Atualizar agora';}catch(error){setLiveStatus(error.message||'Não foi possível entrar.',true);}finally{liveLogin.disabled=false;}}
   function pick(event){const rect=canvas.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(scene.children,true).find(item=>item.object.userData.area||item.object.parent?.userData.area);let object=hit?.object;while(object&&!object.userData.area)object=object.parent;if(object?.userData.area)choose(object.userData.area,object.userData.role||'');}
   canvas.addEventListener('pointerdown',e=>{dragging=true;moved=false;previous={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
   canvas.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-previous.x,dy=e.clientY-previous.y;if(Math.abs(dx)+Math.abs(dy)>3)moved=true;orbit.theta-=dx*.008;orbit.phi=Math.max(.15,Math.min(1.25,orbit.phi+dy*.006));previous={x:e.clientX,y:e.clientY};});
-  canvas.addEventListener('pointerup',e=>{dragging=false;if(!moved)pick(e);});canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=Math.max(21,Math.min(52,orbit.radius+e.deltaY*.018));},{passive:false});
-  document.querySelector('#resetView').onclick=()=>{orbit={theta:.65,phi:.65,radius:38};};
+  canvas.addEventListener('pointerup',e=>{dragging=false;if(!moved)pick(e);});canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=Math.max(24,Math.min(120,orbit.radius+e.deltaY*.018));},{passive:false});
+  document.querySelector('#resetView').onclick=()=>{orbit={theta:.65,phi:.65,radius:defaultOrbitRadius};};
   liveLogin.addEventListener('click', async ()=>{if(live.loaded) await refreshDashboard();else await loginLive();});
   loadProfiles();setInterval(()=>{if(live.loaded)refreshDashboard().catch(()=>setLiveStatus('Não foi possível atualizar agora.',true));},30_000);
   document.querySelector('#toggleMotion').onclick=e=>{motion=!motion;e.currentTarget.textContent=motion?'Pausar pessoas':'Retomar pessoas';};
