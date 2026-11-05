@@ -7,13 +7,33 @@
     comidaFechaAs: "22:00",
     modo: "mesa",
     mesa: "",
+    pontos: [],
+    pontoPadrao: "",
+    foneSessao: "",
   }, window.OPEIXEIRO_CONFIG || {});
   const emMesa = cfg.modo !== "delivery";
-  const mesaLabel = (() => {
-    const bruto = String(cfg.mesa || "").trim();
-    if (!bruto) return "";
-    return /^\d+$/.test(bruto) ? `Mesa ${bruto}` : bruto;
+  const sessao = {
+    ler(nome) { try { return window.sessionStorage.getItem(`opeixeiro.${cfg.modo}.${nome}`) || ""; } catch { return ""; } },
+    gravar(nome, valor) { try { window.sessionStorage.setItem(`opeixeiro.${cfg.modo}.${nome}`, valor); } catch { /* aba particular */ } },
+  };
+  // Ponto (bar) escolhido nesta aba. É teste: quando a etiqueta sair do app de validade, o QR traz o ponto.
+  let ponto = emMesa ? sessao.ler("ponto") || String(cfg.pontoPadrao || "") : "";
+  // O final do WhatsApp entra uma única vez, no começo da sessão, e nunca é perguntado ao cliente.
+  const fone = (() => {
+    if (!emMesa) return "";
+    const salvo = sessao.ler("fone");
+    if (salvo) return salvo;
+    const inicio = String(cfg.foneSessao || "").replace(/\D/g, "").slice(-4);
+    if (inicio) sessao.gravar("fone", inicio);
+    return inicio;
   })();
+  const rotuloMesa = () => {
+    const bruto = String(cfg.mesa || "").trim();
+    const base = /^\d+$/.test(bruto) ? `Mesa ${bruto}` : bruto;
+    if (base && ponto) return `${base} · ${ponto}`;
+    return base || (ponto ? `Ponto ${ponto}` : "");
+  };
+  let mesaLabel = rotuloMesa();
   const menu = window.OPEIXEIRO_MENU || { categorias: [], itens: [] };
   const chatEl = document.getElementById("chat");
   const chipsEl = document.getElementById("rapidinhos");
@@ -30,10 +50,13 @@
   const hora = (t) => String(t).replace(":", "h");
   const subEl = document.querySelector(".sub");
   const rodapeEl = document.querySelector(".rodape");
-  if (subEl) subEl.textContent = emMesa ? `${mesaLabel || "Na sua mesa"} · o garçon traz` : "Bebidas geladas, pedido pelo chat";
-  if (rodapeEl) rodapeEl.textContent = emMesa
-    ? `Pedido da ${mesaLabel || "sua mesa"} — confirme no chat e o garçon recebe na tela dele. Comidas: das ${hora(cfg.comidaAbertaDas)} às ${hora(cfg.comidaFechaAs)}, quando o cardápio abrir.`
-    : "Bebidas: pedido a qualquer hora. Comidas: das 11h às 22h, quando o cardápio abrir.";
+  function pintaRotulos() {
+    if (subEl) subEl.textContent = emMesa ? `${mesaLabel || "Na sua mesa"} · o garçon traz` : "Bebidas geladas, pedido pelo chat";
+    if (rodapeEl) rodapeEl.textContent = emMesa
+      ? `Pedido da ${mesaLabel || "sua mesa"} — confirme no chat e o garçon recebe na tela dele. Comidas: das ${hora(cfg.comidaAbertaDas)} às ${hora(cfg.comidaFechaAs)}, quando o cardápio abrir.`
+      : "Bebidas: pedido a qualquer hora. Comidas: das 11h às 22h, quando o cardápio abrir.";
+  }
+  pintaRotulos();
 
   const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const curto = (t) => (t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t);
@@ -438,13 +461,37 @@
   const daCategoria = (id) => menu.itens.filter((i) => i.categoria === id);
 
   function chipsCategorias() {
-    return menu.categorias.map((c) => ({
+    const pontoChip = emMesa && (cfg.pontos || []).length
+      ? [{ label: `📍 ${ponto || "escolher ponto"}`, onClick: perguntarPonto }]
+      : [];
+    return pontoChip.concat(menu.categorias.map((c) => ({
       label: `${c.emoji} ${c.label}`,
       onClick: () => { desenhar(c.label, "eu"); registrar(c.label); abrirCategoria(c); },
     })).concat([{
       label: "🧊 Copos",
       onClick: () => { desenhar("Copos", "eu"); registrar("Copos"); mostrarCopos(); },
-    }]);
+    }]));
+  }
+
+  // Escolha do ponto só existe enquanto o QR não traz a mesa: o valor vive na sessão da aba.
+  function perguntarPonto() {
+    diz("Em qual ponto é o pedido? Eu guardo a escolha nesta sessão e ela vale para os próximos pedidos.");
+    chips((cfg.pontos || []).map((p) => ({
+      label: p === ponto ? `${p} ✓` : p,
+      onClick: () => trocarPonto(p),
+    })).concat([{ label: "Voltar ao cardápio", onClick: () => chips(chipsCategorias()) }]));
+  }
+
+  function trocarPonto(novo) {
+    ponto = String(novo || "");
+    sessao.gravar("ponto", ponto);
+    mesaLabel = rotuloMesa();
+    pintaRotulos();
+    desenhar(`Ponto ${ponto}`, "eu");
+    registrar(`Ponto ${ponto}`);
+    diz(`Anotado — ${mesaLabel || "seu ponto"}. ${fone ? `Este pedido sai no nome de quem está no WhatsApp final ${fone}.` : ""}`.trim());
+    chips(chipsCategorias());
+    guardarLocal();
   }
 
   function chipsItens(itens, extra) {
@@ -576,6 +623,7 @@
         customer_phone: estado.cliente.telefone,
         delivery_address: estado.cliente.retirada ? "" : estado.cliente.endereco,
         pickup: estado.cliente.retirada ? "retirada" : "",
+        notes: fone ? `WhatsApp final ${fone}` : "",
       });
       if (!r || !r.ok || !r.protocolo) throw new Error("o serviço não devolveu o pedido");
       estado.protocolo = r.protocolo;
@@ -681,7 +729,9 @@
     }
     if (/^mesa\b/.test(t) || /\bmesa[es]?\s*\d+/.test(t)) {
       diz(emMesa
-        ? `Este pedido é da ${mesaLabel || "sua mesa"}. Se você estiver em outra mesa, o QR code da sua é que traz o pedido certo pro garçon.`
+        ? (emMesa && (cfg.pontos || []).length
+          ? `Este pedido está saindo como ${mesaLabel || "sua mesa"}. Se você estiver em outra mesa, toque no 📍 ${ponto || "escolher ponto"} para trocar.`
+          : `Este pedido é da ${mesaLabel || "sua mesa"}. Se você estiver em outra mesa, o QR code da sua é que traz o pedido certo pro garçon.`)
         : "Aqui o pedido chega por entrega ou retirada no balcão, não por mesa.");
       chips(estado.cart.length ? [{ label: "Ver carrinho", onClick: mostrarCarrinho }, chipFinalizar()] : chipsCategorias());
       return;
@@ -766,7 +816,7 @@
       return;
     }
     diz(emMesa
-      ? `${saudacao()}! Este QR code é o pedido da ${mesaLabel || "sua mesa"} no Opeixeiro 🐟\n\n${h < 6 ? "Madrugada também é hora de bebida gelada. " : ""}Escolhe aqui e o garçon traz pra vocês.`
+      ? `${saudacao()}! Este QR code é o pedido da ${mesaLabel || "sua mesa"} no Opeixeiro 🐟\n\n${h < 6 ? "Madrugada também é hora de bebida gelada. " : ""}Escolhe aqui e o garçon traz pra vocês.${(cfg.pontos || []).length ? `\n\n📍 Está no ponto errado? Toque em "${ponto || "escolher ponto"}" para trocar.` : ""}`
       : `${saudacao()}! Aqui é o atendimento do Opeixeiro 🐟\n\n${h < 6 ? "Madrugada também é hora de bebida gelada." : "Me diz o que você quer beber."}`, 200);
     window.setTimeout(() => { if (!estado.historico.some((x) => x.tipo === "eu")) chips(chipsCategorias()); }, 700);
   }
@@ -791,7 +841,7 @@
     if (!estado.chatId || !estado.token) {
       try {
         const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || cfg.fuso).slice(0, 60);
-        const r = await call("open_chat", { timezone: tz, modo: cfg.modo, table_label: mesaLabel });
+        const r = await call("open_chat", { timezone: tz, modo: cfg.modo, table_label: emMesa ? mesaLabel : "" });
         if (r && r.ok) {
           estado.chatId = r.chat_id;
           estado.token = r.token;
