@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opeixeiro Entrega · Peça suas bebidas pelo chat</title>
+<meta name="description" content="Chat para pedir bebidas geladas do O Peixeiro com entrega ou retirada no balcão: cerveja, refrigerante, água, energético, drink. Bebidas a qualquer hora.">
+<meta name="theme-color" content="#0b2a33">
+<link rel="canonical" href="https://kuttenc.github.io/opeixeirodelivery/">
+<link rel="stylesheet" href="../opeixeiro/assets/styles.css">
+</head>
+<body>
+<header class="topo">
+  <div class="marca">
+    <span class="peixe" aria-hidden="true">🐟</span>
+    <div>
+      <h1>Opeixeiro</h1>
+      <p class="sub">Bebidas geladas, pedido pelo chat</p>
+    </div>
+  </div>
+  <div class="estado">
+    <span id="salvando" class="dot" title="Salvando no Supabase"></span>
+    <span id="salvandoTexto" class="dot-text">conectando</span>
+    <span id="abertoChip" class="chip-horario">bebidas: o dia todo</span>
+  </div>
+</header>
+
+<main class="painel">
+  <div id="chat" class="chat" role="log" aria-live="polite" aria-label="Conversa com o atendimento"></div>
+
+  <div id="rapidinhos" class="rapidinhos" aria-label="Respostas rápidas"></div>
+
+  <section id="carrinho" class="carrinho" hidden aria-label="Carrinho">
+    <h2>Seu carrinho</h2>
+    <ul id="carrinhoLista"></ul>
+    <p id="carrinhoVazio" class="vazio">Nada escolhido ainda.</p>
+    <div class="carrinho-acoes">
+      <button id="btnContinuar" class="btn-continuar">Continuar atendimento</button>
+      <button id="btnPedir" class="btn-primario">Finalizar pedido</button>
+    </div>
+  </section>
+</main>
+
+<form id="composer" class="composer" autocomplete="off">
+  <input id="entrada" name="entrada" type="text" placeholder="Escreva o que você quer beber…" aria-label="Mensagem" maxlength="500">
+  <button type="submit" class="btn-enviar" aria-label="Enviar">Enviar</button>
+</form>
+
+<p class="rodape">Bebidas: pedido a qualquer hora. Comidas: das 11h às 22h, quando o cardápio abrir.</p>
+
+<script src="../opeixeiro/assets/config.js"></script>
+<script src="assets/config.js"></script>
+<script src="../opeixeiro/assets/menu.js"></script>
+<script src="../opeixeiro/assets/acessorios.js"></script>
+<script src="../opeixeiro/assets/app.js"></script>
+</body>
+</html>
