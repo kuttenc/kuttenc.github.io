@@ -3,16 +3,38 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Urtador</title>
-</head>
+    <title>Redirecionando…</title>
+  </head>
   <body>
     <script>
       (function () {
-        const suffix = window.location.pathname.replace(/^\/+/, "");
-        window.location.replace(`/urtador/${suffix}${window.location.search}${window.location.hash}`);
+        const path = window.location.pathname;
+        const query = window.location.search;
+        const hash = window.location.hash;
+
+        // QR colado na mesa: /opeixeiro/P<ponto>mesa<numero> (e /opeixeiro/mesa<numero ou base64>
+        // sem ponto). O Pages é estático e devolve este 404.html para qualquer path inexistente,
+        // então o segmento é repassado inteiro como ?m= para a página decodificar ponto e mesa.
+        // O prefixo do Urtador é aceito pelo mesmo motivo: a etiqueta impressa hoje é
+        // /urtador/opeixeiro/mesaN e o 404 de lá também encaminha — o cliente chega igual.
+        const mesa = /(?:^|\/)opeixeiro\/((?:p\d{1,2}\s*)?mesa[a-z0-9+/=-]*)\/?$/i.exec(path);
+        if (mesa) {
+          window.location.replace(`/opeixeiro/${query}${query ? "&" : "?"}m=${encodeURIComponent(mesa[1])}${hash}`);
+          return;
+        }
+
+        // O Urtador canônico fica em /urtador/. Para lá só vai o que ainda não está nele: sem essa
+        // trava, um /urtador/<qualquer coisa> viraria /urtador/urtador/<qualquer coisa> em loop.
+        if (/^\/urtador(\/|$)/i.test(path)) {
+          window.location.replace(`/urtador/${query}${hash}`);
+          return;
+        }
+
+        const suffix = path.replace(/^\/+/, "");
+        window.location.replace(`/urtador/${suffix}${query}${hash}`);
       })();
     </script>
+    <p><a href="/opeixeiro/">Abrir o atendimento do Opeixeiro</a></p>
     <p><a href="/urtador/">Abrir o Urtador</a></p>
   </body>
 </html>
-

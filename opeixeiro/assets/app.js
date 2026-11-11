@@ -10,14 +10,86 @@
     pontos: [],
     pontoPadrao: "",
     foneSessao: "",
+    mesaMaxima: 150,
+    peixeiroMaximo: 7,
+    foneAtendimento: "",
+    autoAbrirWhatsApp: true,
   }, window.OPEIXEIRO_CONFIG || {});
   const emMesa = cfg.modo !== "delivery";
-  const sessao = {
-    ler(nome) { try { return window.sessionStorage.getItem(`opeixeiro.${cfg.modo}.${nome}`) || ""; } catch { return ""; } },
-    gravar(nome, valor) { try { window.sessionStorage.setItem(`opeixeiro.${cfg.modo}.${nome}`, valor); } catch { /* aba particular */ } },
+  // QR colado na mesa (app de validade PT260, mesas 1 a 150): a etiqueta traz o ponto (peixeiro) e
+  // o número no path — /opeixeiro/P1mesa1, /opeixeiro/P7mesa150. Também vale sem ponto
+  // (/opeixeiro/mesa14) e com o número em base64 (/opeixeiro/mesaMTQ=). O Pages é estático, então o
+  // 404.html do site (ou o do Urtador, no prefixo /urtador/) repassa o segmento como ?m= antes daqui.
+  const mesaDaUrl = (() => {
+    const params = new URLSearchParams(window.location.search);
+    const bruto = (/^\/opeixeiro\/((?:p\s*\d{1,2}\s*)?mesa[^/?#]*)$/i.exec(window.location.pathname) || [])[1]
+      || params.get("m")
+      || params.get("mesa")
+      || "";
+    return decodeURIComponent(String(bruto || ""));
+  })();
+  // Espelho de supabase/functions/_shared/mesa-qr.mjs — mudar um, mudar o outro.
+  // "P7mesa150": o prefixo é o ponto, não parte do número; sem tirá-lo, "P7mesa150" não é número nem
+  // base64 e a mesa se perderia. O lookahead exige o "mesa" logo depois para não comer um base64 em "P".
+  const SEM_PONTO = (s) => s.replace(/^p\s*\d{1,2}(?=\s*mesa)/i, "").trim();
+  const numeroDeMesa = (bruto) => {
+    const s = SEM_PONTO(String(bruto || "").trim()).replace(/^mesa/i, "").trim();
+    if (!s) return 0;
+    if (/^\d{1,4}$/.test(s)) return Number(s);
+    const base = s.replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
+    if (!/^[A-Za-z0-9+/]{1,8}$/.test(base)) return 0;
+    let decodificado = "";
+    try {
+      decodificado = atob(base + "=".repeat((4 - (base.length % 4)) % 4)).trim();
+    } catch {
+      return 0;
+    }
+    return /^\d{1,4}$/.test(decodificado) ? Number(decodificado) : 0;
   };
-  // Ponto (bar) escolhido nesta aba. É teste: quando a etiqueta sair do app de validade, o QR traz o ponto.
-  let ponto = emMesa ? sessao.ler("ponto") || String(cfg.pontoPadrao || "") : "";
+  const mesaMaxima = Number(cfg.mesaMaxima) || 150;
+  const mesaValida = (n) => Number.isInteger(n) && n >= 1 && n <= mesaMaxima;
+  const mesaVindaDoQr = numeroDeMesa(mesaDaUrl);
+  // O ponto (peixeiro) vem antes da mesa no path: /opeixeiro/P7mesa150. De P1 a P7 é o mesmo limite
+  // do servidor (pontoDoPedido) — fora disso não há bar cadastrado, e a escolha volta para a sessão.
+  const peixeiroMaximo = Number(cfg.peixeiroMaximo) || 7;
+  const peixeiroDoQr = (() => {
+    const m = /^p\s*(\d{1,2})(?=\s*(?:mesa|$))/i.exec(mesaDaUrl.trim());
+    if (!m) return { ponto: "", fora: false };
+    const n = Number(m[1]);
+    return n >= 1 && n <= peixeiroMaximo ? { ponto: `P${n}`, fora: false } : { ponto: "", fora: true };
+  })();
+  // QR que traz um segmento de mesa manda no rótulo: número válido vira a mesa da conversa.
+  // Qualquer outra coisa (151, 999, "mesaabc") fica sem mesa nenhuma — seria pedir ao garçon a
+  // mesa errada, a do config — e a página avisa o cliente para chamar a equipe. Base64 é formato
+  // da etiqueta, não trava: por isso a faixa é conferida aqui e no servidor.
+  const qrTrouxeMesa = mesaDaUrl !== "";
+  const avisoQr = [
+    !qrTrouxeMesa || mesaValida(mesaVindaDoQr)
+      ? ""
+      : mesaVindaDoQr > 0
+        ? `Este QR code aponta para a mesa ${mesaVindaDoQr}, que não existe aqui — só de 1 a ${mesaMaxima}. Chame a equipe do Opeixeiro.`
+        : "Este QR code não traz uma mesa reconhecível. Chame a equipe do Opeixeiro.",
+    peixeiroDoQr.fora
+      ? `Este QR code traz um ponto que não existe aqui — só de P1 a P${peixeiroMaximo}. Chame a equipe do Opeixeiro.`
+      : "",
+  ].filter(Boolean).join(" ");
+  if (mesaValida(mesaVindaDoQr)) cfg.mesa = String(mesaVindaDoQr);
+  else if (qrTrouxeMesa) cfg.mesa = "";
+  const mesaNumero = mesaValida(mesaVindaDoQr)
+    ? mesaVindaDoQr
+    : (mesaValida(numeroDeMesa(cfg.mesa)) ? numeroDeMesa(cfg.mesa) : 0);
+  const mesaSlug = mesaValida(mesaVindaDoQr) ? mesaDaUrl.slice(0, 40) : "";
+  // Tudo que a página guarda vive dentro do escopo da mesa que o QR trouxe. Sem o número na chave,
+  // o celular que abriu a Mesa 14 e depois escaneou a Mesa 7 continuaria na conversa, no ponto e no
+  // final de telefone da 14 — e o pedido chegaria na mesa errada.
+  const escopo = emMesa ? `${cfg.modo}.m${mesaNumero || 0}` : cfg.modo;
+  const sessao = {
+    ler(nome) { try { return window.sessionStorage.getItem(`opeixeiro.${escopo}.${nome}`) || ""; } catch { return ""; } },
+    gravar(nome, valor) { try { window.sessionStorage.setItem(`opeixeiro.${escopo}.${nome}`, valor); } catch { /* aba particular */ } },
+  };
+  // Ponto (bar) da conversa: o que a etiqueta trouxe chega em primeiro lugar; a escolha da sessão e
+  // o padrão do config só valem quando o QR não trouxe ponto (ou trouxe um que não existe).
+  let ponto = emMesa ? peixeiroDoQr.ponto || sessao.ler("ponto") || String(cfg.pontoPadrao || "") : "";
   // O final do WhatsApp entra uma única vez, no começo da sessão, e nunca é perguntado ao cliente.
   const fone = (() => {
     if (!emMesa) return "";
@@ -46,7 +118,12 @@
   const dotEl = document.getElementById("salvando");
   const dotTextEl = document.getElementById("salvandoTexto");
   const horarioEl = document.getElementById("abertoChip");
-  const chaveLocal = `opeixeiro.chat.v1.${cfg.modo}`;
+  const andamentoEl = document.getElementById("andamento");
+  const zapEl = document.getElementById("zap");
+  const zapTextoEl = document.getElementById("zapTexto");
+  const zapBotaoEl = document.getElementById("zapBotao");
+  const zapAquiEl = document.getElementById("zapAqui");
+  const chaveLocal = `opeixeiro.chat.v1.${escopo}`;
   const hora = (t) => String(t).replace(":", "h");
   const subEl = document.querySelector(".sub");
   const rodapeEl = document.querySelector(".rodape");
@@ -81,6 +158,10 @@
     vigiando: false,
     bloqueadoAte: 0,
     bloqueados: [],
+    indisponiveis: [],
+    faltas: [],
+    pedido: null,
+    perguntaVista: "",
   };
 
   function setSalvando(modo) {
@@ -145,6 +226,7 @@
         historico: estado.historico.slice(-60),
         bloqueadoAte: estado.bloqueadoAte,
         bloqueados: estado.bloqueados,
+        perguntaVista: estado.perguntaVista,
       }));
     } catch { /* navegação particular */ }
   }
@@ -313,14 +395,68 @@
 
   const buscar = (texto) => ranquear(texto).map((m) => m.item);
 
+  // Duas fontes de "acabou". A principal é o checklist *5* do grupo OTP: ele desliga a linha exata
+  // do cardápio e o servidor devolve a chave `id::variante`, que não depende de acertar nome —
+  // "Skol Garrafa 600 ml" desativada deixa a "Skol Lata 350 ml" na prateleira. A segunda é o
+  // catálogo do Bar, riscada pelo nome (ex: "brahma lata"): um nome só é coberto quando a falta
+  // cobre todas as palavras dele e não sobra produto diferente — "coca cola lata" não risca a Coca
+  // Zero. Embalagem e tamanho são rótulo, não produto: "350 ml" e "lata" não salvam um item acabado.
+  const embalagens = new Set(["lata", "latas", "garrafa", "garrafas", "long", "neck", "ml", "litro", "litros", "kg", "g", "un", "unidade", "unidades", "uds", "pack", "caixa", "padrao"]);
+  const soTamanho = (p) => /^\d+$/.test(p) || /^\d+(ml|cl|l|kg|g|un|uds)$/.test(p);
+  const semTamanho = (s) => palavras(s).filter((p) => !soTamanho(p));
+  const cobertoPelaFalta = (nome) => {
+    const alvo = semTamanho(nome);
+    const alvoSet = new Set(alvo);
+    return (estado.indisponiveis || []).some((rotulo) => {
+      const tokens = new Set(semTamanho(rotulo));
+      if (!tokens.size || ![...tokens].every((t) => alvoSet.has(t))) return false;
+      return alvo.every((p) => tokens.has(p) || embalagens.has(p));
+    });
+  };
+  const chaveDaLinha = (id, variante) => `${String(id || "").trim()}::${String(variante || "padrão").trim()}`;
+  const nomeDaLinha = (l) => (l.variante && l.variante !== "padrão" ? `${l.nome} ${l.variante}` : l.nome);
+  const chaveDesligada = (id, variante) => (estado.faltas || []).includes(chaveDaLinha(id, variante));
+  const varianteAcabada = (item, variante) => chaveDesligada(item.id, variante.rotulo)
+    || cobertoPelaFalta(`${variante.nome || item.nome} ${variante.rotulo || ""}`);
+  const estaAcabado = (item) => item.variantes.every((v) => varianteAcabada(item, v));
+  const sugestoesDoPonto = (item) => menu.itens
+    .filter((i) => i.categoria === item.categoria && i.id !== item.id && !estaAcabado(i))
+    .slice(0, 4);
+
+  // O servidor é dono da lista: no open_chat e no poll ela vem completa e substitui o risco que a
+  // página tem. Na recusa do pedido ele manda só o que faltava naquele carrinho, e aí se soma.
+  // Retorna as linhas que precisaram sair do carrinho.
+  function aplicarFaltas(rotulos, recusados, completa, chaves) {
+    const novos = (Array.isArray(rotulos) ? rotulos : []).map((r) => String(r).trim()).filter(Boolean);
+    const atuais = estado.indisponiveis || [];
+    estado.indisponiveis = completa ? novos : novos.concat(atuais.filter((r) => !novos.some((n) => norm(n) === norm(r))));
+    const novas = (Array.isArray(chaves) ? chaves : []).map(String);
+    estado.faltas = completa ? novas : [...new Set((estado.faltas || []).concat(novas))];
+    const ids = new Set((Array.isArray(recusados) ? recusados : []).map((i) => String(i)));
+    const sumidas = estado.cart.filter((l) => estado.faltas.includes(chaveDaLinha(l.id, l.variante))
+      || (!ehCopo(l) && (ids.has(String(l.id)) || cobertoPelaFalta(`${l.nome} ${l.variante || ""}`))));
+    if (sumidas.length) estado.cart = estado.cart.filter((l) => !sumidas.includes(l));
+    desenharCarrinho();
+    salvarRascunho();
+    return sumidas;
+  }
+
+  function recusarAcabado(item, variante) {
+    const sug = sugestoesDoPonto(item);
+    diz(`${item.nome}${variante ? ` ${variante.rotulo}` : ""} acabou.${sug.length ? "No lugar, dá pra levar:" : "Escolhe outra que eu já anoto."}`, 120);
+    window.setTimeout(() => chips(sug.length
+      ? chipsItens(sug, [{ label: "← categorias", onClick: () => chips(chipsCategorias()) }, { label: "Ver carrinho", onClick: mostrarCarrinho }])
+      : chipsCategorias()), 300);
+  }
+
   const acessorios = window.OPEIXEIRO_ACESSORIOS || [];
   const regraCopos = Object.assign({ coposPorLatinha: 4, rotuloLatinha: "lata" }, window.OPEIXEIRO_REGRA_COPOS || {});
   const ehCopo = (l) => l.tipo === "copo";
   const ehLatinha = (l) => !ehCopo(l) && new RegExp(regraCopos.rotuloLatinha, "i").test(`${l.variante || ""} ${l.nome || ""}`);
   const latinhas = () => estado.cart.filter(ehLatinha).reduce((s, l) => s + l.qtd, 0);
+  const bebidas = () => estado.cart.filter((l) => !ehCopo(l)).reduce((s, l) => s + l.qtd, 0);
   const coposNoCarrinho = () => estado.cart.filter(ehCopo).reduce((s, l) => s + l.qtd, 0);
   const limiteCopos = () => latinhas() * regraCopos.coposPorLatinha;
-  const coposLivres = () => limiteCopos() - coposNoCarrinho();
   const cdbNoCarrinho = () => estado.cart.filter((l) => l.id === "cdb").reduce((s, l) => s + l.qtd, 0);
   const reais = (v) => `R$ ${Number(v).toFixed(2).replace(".", ",")}`;
   const buscaCopo = (texto) => {
@@ -347,38 +483,29 @@
 
   function chipsCopos(extra) {
     return acessorios.map((a) => ({
-      label: `${a.sigla}${a.preco ? ` (${reais(a.preco)})` : ""}`,
+      label: `${a.sigla}${a.preco ? ` (${reais(a.preco)})` : ""}${chaveDesligada(a.id, "padrão") ? " · acabou" : ""}`,
       onClick: () => { desenhar(a.sigla, "eu"); registrar(a.sigla); confirmarCopo(a, 1); },
     })).concat(extra || []);
   }
 
   function confirmarCopo(acessorio, qtd) {
-    if (!latinhas()) {
-      diz(`Os copos vão junto com as latinhas de 350 ml — cada latinha dá direito a ${regraCopos.coposPorLatinha} copos. Me diz primeiro a bebida em lata.`);
+    if (chaveDesligada(acessorio.id, "padrão")) {
+      diz(`${acessorio.nome} acabou neste ponto. ${acessorios.some((a) => a.id !== acessorio.id && !chaveDesligada(a.id, "padrão")) ? "No lugar:" : "O que sobrou está no cardápio."}`, 120);
+      window.setTimeout(() => chips(chipsCopos([{ label: "Ver carrinho", onClick: mostrarCarrinho }, chipFinalizar()])), 300);
+      return;
+    }
+    if (!bebidas()) {
+      diz("Copo vai junto com uma bebida. Me diz primeiro o que você vai beber — cerveja em lata, garrafa ou KS serve.");
       chips(chipsCategorias());
       return;
     }
-    if (coposLivres() <= 0) {
-      diz(`Com ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} de 350 ml o limite é ${limiteCopos()} copos, e já estão ${coposNoCarrinho()} no carrinho. Quer adicionar mais latinhas?`);
-      chips([{ label: "Adicionar bebida", onClick: () => chips(chipsCategorias()) }, chipFinalizar()]);
-      return;
-    }
-    const pedida = Math.min(qtd, coposLivres());
-    adicionarCopo(acessorio, pedida);
+    adicionarCopo(acessorio, qtd);
     const aviso = acessorio.preco
-      ? `${acessorio.sigla} é cobrado à parte: ${reais(acessorio.preco)} cada. ${pedida} ${pedida === 1 ? "unidade" : "unidades"} = ${reais(acessorio.preco * pedida)}.`
-      : `${acessorio.nome} anotado.`;
-    diz(`${aviso}\n\nLimite de copos: ${coposNoCarrinho()} de ${limiteCopos()} usados (${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} × ${regraCopos.coposPorLatinha}).`);
+      ? `${acessorio.sigla} é cobrado à parte: ${reais(acessorio.preco)} cada. ${qtd} ${qtd === 1 ? "unidade" : "unidades"} = ${reais(acessorio.preco * qtd)}.`
+      : `${acessorio.nome} anotado, sem custo.`;
+    const coberto = latinhas() ? `\n\nAs ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} de 350 ml cobrem ${limiteCopos()} copos, e qualquer copo a mais também sai sem custo.` : "";
+    diz(`${aviso} Você tem ${coposNoCarrinho()} ${coposNoCarrinho() === 1 ? "copo" : "copos"} no carrinho.${coberto}`);
     chips(chipsCopos([{ label: "Ver carrinho", onClick: mostrarCarrinho }, chipFinalizar()]));
-  }
-
-  function passaLimiteCopos() {
-    if (coposNoCarrinho() > limiteCopos()) {
-      diz(`Você ficou acima do limite: ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} de 350 ml dão direito a ${limiteCopos()} copos e o carrinho tem ${coposNoCarrinho()}. Ajuste os copos ou volte nas bebidas.`);
-      chips(chipsCopos([{ label: "Ver carrinho", onClick: mostrarCarrinho }]));
-      return true;
-    }
-    return false;
   }
 
   function adicionarCopo(acessorio, qtd) {
@@ -447,9 +574,9 @@
         return b;
       };
       caixa.append(
-        criar("−", () => { linha.qtd -= 1; if (linha.qtd < 1) estado.cart.splice(i, 1); desenharCarrinho(); salvarRascunho(); passaLimiteCopos(); }),
-        criar("+", () => { linha.qtd = Math.min(999, linha.qtd + 1); desenharCarrinho(); salvarRascunho(); passaLimiteCopos(); }),
-        criar("tirar", () => { estado.cart.splice(i, 1); desenharCarrinho(); salvarRascunho(); passaLimiteCopos(); }),
+        criar("−", () => { linha.qtd -= 1; if (linha.qtd < 1) estado.cart.splice(i, 1); desenharCarrinho(); salvarRascunho(); }),
+        criar("+", () => { linha.qtd = Math.min(999, linha.qtd + 1); desenharCarrinho(); salvarRascunho(); }),
+        criar("tirar", () => { estado.cart.splice(i, 1); desenharCarrinho(); salvarRascunho(); }),
       );
       li.append(nome, caixa);
       cartListEl.appendChild(li);
@@ -495,13 +622,18 @@
   }
 
   function chipsItens(itens, extra) {
-    return itens.slice(0, 16).map((i) => ({ label: i.nome, onClick: () => escolherProduto(i) })).concat(extra || []);
+    return itens.slice(0, 16).map((i) => ({ label: `${i.nome}${estaAcabado(i) ? " · acabou" : ""}`, onClick: () => escolherProduto(i) })).concat(extra || []);
   }
 
   function mostrarCopos() {
     const cdb = acessorios.find((a) => a.id === "cdb");
-    if (!latinhas()) diz(`Cada latinha de 350 ml dá direito a ${regraCopos.coposPorLatinha} copos. Escolha primeiro a bebida em lata e depois os copos.`);
-    else diz(`Suas ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} de 350 ml dão direito a ${limiteCopos()} copos — ${coposNoCarrinho()} já estão no carrinho.${cdb ? ` ${cdb.sigla} é cobrado à parte: ${reais(cdb.preco)} cada.` : ""}`);
+    if (!bebidas()) diz(`Todo copo acompanha uma bebida — cerveja em lata, garrafa ou KS. Escolha primeiro o que você vai beber.`);
+    else {
+      const cobertura = latinhas()
+        ? `As ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} de 350 ml cobrem ${limiteCopos()} copos, e o que passar disso também vem sem custo.`
+        : `Copo à parte é liberado com qualquer cerveja, sem custo.`;
+      diz(`${cobertura} No carrinho: ${coposNoCarrinho()} ${coposNoCarrinho() === 1 ? "copo" : "copos"}.${cdb ? ` ${cdb.sigla} é cobrado à parte: ${reais(cdb.preco)} cada.` : ""}`);
+    }
     chips(chipsCopos([
       { label: "← categorias", onClick: () => chips(chipsCategorias()) },
       { label: "Ver carrinho", onClick: mostrarCarrinho },
@@ -521,12 +653,18 @@
   function escolherProduto(item) {
     desenhar(item.nome, "eu");
     registrar(item.nome);
+    if (estaAcabado(item)) { recusarAcabado(item); return; }
     if (item.variantes.length > 1) {
       diz(`${item.nome} vem em: ${item.variantes.map((v) => v.rotulo).join(", ")}. Qual tamanho?`, 120);
+      const pega = (v, qtd) => () => {
+        registrar(`${item.nome} ${v.rotulo}${qtd > 1 ? ` × ${qtd}` : ""}`);
+        if (varianteAcabada(item, v)) { recusarAcabado(item, v); return; }
+        confirmar(item, adicionar(item, v, qtd));
+      };
       window.setTimeout(() => chips(item.variantes.map((v) => ({
-        label: v.rotulo,
-        onClick: () => { registrar(`${item.nome} ${v.rotulo}`); confirmar(item, adicionar(item, v, 1)); },
-      })).concat([{ label: "× 6", onClick: () => { registrar(`${item.nome} × 6`); confirmar(item, adicionar(item, item.variantes[0], 6)); } }])), 300);
+        label: `${v.rotulo}${varianteAcabada(item, v) ? " · acabou" : ""}`,
+        onClick: pega(v, 1),
+      })).concat([{ label: "× 6", onClick: pega(item.variantes[0], 6) }])), 300);
       return;
     }
     confirmar(item, adicionar(item, item.variantes[0], 1));
@@ -535,10 +673,10 @@
   function confirmar(item, variante) {
     const total = estado.cart.reduce((s, l) => s + l.qtd, 0);
     const lata = ehLatinha({ tipo: "bebida", nome: item.nome, variante: variante.rotulo });
-    diz(`Anotado: ${item.nome}${variante.rotulo !== "padrão" ? ` (${variante.rotulo})` : ""}. ${total} ${total === 1 ? "item" : "itens"} no carrinho. Mais alguma coisa?${lata ? ` Com ${latinhas()} ${latinhas() === 1 ? "latinha" : "latinhas"} você tem direito a ${limiteCopos()} copos.` : ""}`, 120);
+    diz(`Anotado: ${item.nome}${variante.rotulo !== "padrão" ? ` (${variante.rotulo})` : ""}. ${total} ${total === 1 ? "item" : "itens"} no carrinho. Mais alguma coisa?${lata ? ` Cada ${latinhas() === 1 ? "latinha" : `${latinhas()} latinhas`} de 350 ml já dá direito a 4 copos.` : ""}`, 120);
     window.setTimeout(() => chips([
       { label: "Adicionar outro", onClick: () => chips(chipsCategorias()) },
-      ...(lata ? [{ label: "🧊 Escolher copos", onClick: () => { desenhar("Escolher copos", "eu"); registrar("Escolher copos"); mostrarCopos(); } }] : []),
+      { label: "🧊 Escolher copos", onClick: () => { desenhar("Escolher copos", "eu"); registrar("Escolher copos"); mostrarCopos(); } },
       { label: "Ver carrinho", onClick: mostrarCarrinho },
       chipFinalizar(),
     ]), 300);
@@ -586,7 +724,7 @@
       linhas.push(`Entrega: ${estado.cliente.retirada ? "retirar no balcão" : estado.cliente.endereco}`);
     }
     linhas.push(`Itens: ${estado.cart.map(rotulo).join(" · ")}`);
-    if (coposNoCarrinho()) linhas.push(`Copos: ${coposNoCarrinho()} de ${limiteCopos()} (limite das latinhas de 350 ml)`);
+    if (coposNoCarrinho()) linhas.push(`Copos: ${coposNoCarrinho()} à parte (sem custo, só CDB é cobrado)`);
     const cobrado = estado.cart.filter((l) => l.preco).reduce((s, l) => s + l.preco * l.qtd, 0);
     if (cobrado) linhas.push(`CDB: ${reais(cobrado)} à parte (${cdbNoCarrinho()} × ${reais(acessorios.find((a) => a.id === "cdb")?.preco || 2)})`);
     linhas.push("Valor: a equipe confirma na resposta");
@@ -630,13 +768,30 @@
       estado.passo = "finalizado";
       atualizarHorario(r);
       const cobrado = Number(r.cobrado_total) || 0;
-      diz(`Pedido ${r.protocolo} registrado ✅\n\n${r.item_count} ${r.item_count === 1 ? "item" : "itens"} · ${emMesa ? mesaLabel || "sua mesa" : estado.cliente.retirada ? "retirada no balcão" : "entrega"}.${cobrado ? `\n${reais(cobrado)} dos copos cobrados à parte, a equipe confirma o total.` : ""} ${emMesa ? "O garçon já viu e está trazendo." : "A equipe confirma disponibilidade e valor e responde nesta conversa."}`, 200);
+      const andamento = Number(r.outros_abertos) > 0
+        ? "🚴 Seu novo pedido já está a caminho."
+        : "⏳ Seu pedido está sendo preparado, aguarde...";
+      diz(`Pedido ${r.protocolo} registrado ✅\n\n${r.item_count} ${r.item_count === 1 ? "item" : "itens"} · ${emMesa ? mesaLabel || "sua mesa" : estado.cliente.retirada ? "retirada no balcão" : "entrega"}.${cobrado ? `\n${reais(cobrado)} de CDB à parte; os outros copos são cortesia.` : ""} ${emMesa ? "O garçon já viu e está trazendo." : "A equipe confirma disponibilidade e valor e responde nesta conversa."}\n\n${andamento}`, 200);
       window.setTimeout(() => chips([
         { label: "Ver meu pedido", onClick: () => cartao(`Pedido ${r.protocolo}`, resumo()) },
         { label: "Fazer outro pedido", onClick: recomecar },
       ]), 400);
       guardarLocal();
     } catch (erro) {
+      if (Array.isArray(erro.em_falta) && erro.em_falta.length) {
+        const sumidas = aplicarFaltas(erro.em_falta, erro.em_falta_ids, false, erro.em_falta_chaves);
+        const sug = [];
+        sumidas.forEach((linha) => {
+          const item = menu.itens.find((i) => i.id === linha.id);
+          if (item) sugestoesDoPonto(item).forEach((s) => { if (!sug.some((x) => x.id === s.id)) sug.push(s); });
+        });
+        const nomes = sumidas.map(nomeDaLinha);
+        diz(`${erro.message}${sug.length ? "\n\nNo lugar, dá pra levar:" : nomes.length ? `\n\nTirei do carrinho: ${nomes.join(", ")}.` : "\n\nSeu carrinho continua aqui."}`, 200);
+        chips(sug.length
+          ? chipsItens(sug, [{ label: "Ver carrinho", onClick: mostrarCarrinho }, chipFinalizar()])
+          : [{ label: "Adicionar outra bebida", onClick: () => chips(chipsCategorias()) }, chipFinalizar()]);
+        return;
+      }
       if (Number(erro.aguardar_segundos) > 0) {
         marcarEspera(erro.aguardar_segundos, erro.repetidos);
         diz(`${rotuloEsperaCompleto()}\n\nSeu carrinho continua salvo aqui.`, 200);
@@ -660,10 +815,69 @@
   }
 
   function atualizarHorario(dados) {
+    if (dados && (Array.isArray(dados.indisponiveis) || Array.isArray(dados.indisponiveis_chaves))) {
+      const sumiram = aplicarFaltas(dados.indisponiveis, [], true, dados.indisponiveis_chaves).map(nomeDaLinha);
+      if (sumiram.length) diz(`Acabou de sair do balcão: ${sumiram.join(", ")}. Tirei do carrinho, escolhe outra.`, 200);
+    }
+    aplicarAviso(dados);
     if (!dados || !dados.food_window) return;
     const bebidas = dados.bebidas === false ? "fechadas agora" : "o dia todo";
     const comidas = dados.comidas ? `abertas ${dados.food_window}` : `fechadas ${dados.food_window}`;
     horarioEl.textContent = `bebidas: ${bebidas} · comidas: ${comidas}`;
+  }
+
+  // Quem conta o tempo do pedido é o servidor: `open_chat`, `poll` e `place_order` devolvem
+  // `pedido` com a frase pronta ("sendo preparado há X minutos") e a pergunta de mais uma cerveja
+  // quando já passaram 30 minutos. A linha de andamento é reescrita no mesmo lugar — não é
+  // mensagem nova a cada poll — e cada pergunta aparece uma única vez, marcada pela `pergunta_id`.
+  function pintarAndamento() {
+    if (!andamentoEl) return;
+    const texto = (estado.pedido && estado.pedido.texto) || "";
+    andamentoEl.hidden = !texto;
+    andamentoEl.textContent = texto;
+  }
+
+  function aplicarAviso(dados) {
+    estado.pedido = dados && dados.pedido ? dados.pedido : null;
+    pintarAndamento();
+    const p = estado.pedido;
+    if (!p || !p.pergunta_id || !p.pergunta_item || estado.perguntaVista === p.pergunta_id) return;
+    estado.perguntaVista = p.pergunta_id;
+    guardarLocal();
+    diz(`🍻 ${p.pergunta}`, 120);
+    window.setTimeout(() => chips([
+      { label: "Quero, manda +1", onClick: () => pedirMaisUma(p), primario: true },
+      { label: "Agora não", onClick: recusaMaisUma },
+    ]), 400);
+  }
+
+  function recusaMaisUma() {
+    diz("Fechado. Quando bater a sede de novo é só pedir por aqui.", 120);
+    window.setTimeout(() => chips([chipFinalizar(), { label: "Ver cardápio", onClick: () => chips(chipsCategorias()) }]), 400);
+  }
+
+  function pedirMaisUma(p) {
+    const linha = p.pergunta_item;
+    const item = menu.itens.find((i) => i.id === linha.id);
+    const variante = item ? item.variantes.find((v) => v.rotulo === linha.variante) : null;
+    desenhar(`Quero mais uma ${linha.nome}`, "eu");
+    registrar(`Quero mais uma ${linha.nome}`);
+    if (!item) {
+      diz("Essa bebida saiu do cardápio de hoje. Escolhe outra que eu já anoto.", 120);
+      window.setTimeout(() => chips(chipsCategorias()), 400);
+      return;
+    }
+    if (estaAcabado(item) || (variante && varianteAcabada(item, variante))) {
+      recusarAcabado(item, variante);
+      return;
+    }
+    adicionar(item, variante, 1);
+    diz(`Anotado: mais uma ${linha.nome}. Confirmando, o garçon já vê o pedido novo.`, 120);
+    window.setTimeout(() => chips([
+      { label: "Finalizar pedido", onClick: iniciarCheckout, primario: true },
+      { label: "Adicionar outra", onClick: () => chips(chipsCategorias()) },
+      { label: "Ver carrinho", onClick: mostrarCarrinho },
+    ]), 400);
   }
 
   function coletar(texto) {
@@ -798,12 +1012,73 @@
     }
     const item = primeiro.item;
     const falada = varianteFalando(item, texto);
+    if (estaAcabado(item)) { recusarAcabado(item); return; }
+    if (falada && varianteAcabada(item, falada)) { recusarAcabado(item, falada); return; }
     if (item.variantes.length > 1 && !falada) { escolherProduto(item); return; }
     confirmar(item, adicionar(item, falada || item.variantes[0], quantidade(texto)));
   }
 
+  // Entrega do cliente da mesa ao WhatsApp do atendimento, só no navegador: a mensagem que ele
+  // mesmo manda ("Olá, sou o cliente da mesa 14!") é o gancho para o Green API reconhecer cada
+  // cliente mais tarde. Nada é gravado no backend por enquanto — sem `foneAtendimento` no config,
+  // o bloco inteiro fica escondido e o cliente segue conversando aqui.
+  const foneAtendimento = String(cfg.foneAtendimento || "").replace(/\D/g, "");
+  const textoZap = `Olá, sou o cliente da mesa ${mesaNumero}!`;
+  const linkZap = emMesa && mesaNumero && foneAtendimento
+    ? `https://wa.me/${foneAtendimento}?text=${encodeURIComponent(textoZap)}`
+    : "";
+  const chaveZapSessao = `opeixeiro.zap.${cfg.modo}.${mesaNumero || 0}`;
+  let zapContador = 0;
+
+  function marcaZapVisto() {
+    try { window.sessionStorage.setItem(chaveZapSessao, "1"); } catch { /* aba particular */ }
+  }
+
+  function entregaZap() {
+    window.clearTimeout(zapContador);
+    marcaZapVisto();
+    window.location.assign(linkZap);
+  }
+
+  function montaZap() {
+    if (!zapEl || !linkZap) return;
+    zapEl.hidden = false;
+    if (zapBotaoEl) {
+      zapBotaoEl.href = linkZap;
+      zapBotaoEl.addEventListener("click", marcaZapVisto);
+    }
+    if (zapAquiEl) {
+      zapAquiEl.addEventListener("click", () => {
+        window.clearTimeout(zapContador);
+        marcaZapVisto();
+        zapEl.hidden = true;
+      });
+    }
+    let visto = "";
+    try { visto = window.sessionStorage.getItem(chaveZapSessao) || ""; } catch { /* aba particular */ }
+    if (cfg.autoAbrirWhatsApp === false || visto) {
+      if (zapTextoEl) {
+        zapTextoEl.textContent = `📱 Mesa ${mesaNumero} lida do QR code. Toque em "Falar no WhatsApp" e mande: "${textoZap}"`;
+      }
+      return;
+    }
+    let falta = 4;
+    const conta = () => {
+      if (zapTextoEl) {
+        zapTextoEl.textContent = `📱 Mesa ${mesaNumero} lida do QR code. Abrindo o WhatsApp em ${falta}s com a mensagem "${textoZap}" — ou continue aqui no chat.`;
+      }
+      if (falta <= 0) { entregaZap(); return; }
+      falta -= 1;
+      zapContador = window.setTimeout(conta, 1000);
+    };
+    conta();
+  }
+
   function abrirConversa() {
     const { h } = horaSp();
+    if (avisoQr) {
+      desenhar(avisoQr, "sistema");
+    }
     if (estado.historico.length) {
       restaurando = true;
       estado.historico.forEach(({ texto, tipo }) => desenhar(texto, tipo));
@@ -834,14 +1109,22 @@
       estado.historico = Array.isArray(salvo.historico) ? salvo.historico : [];
       estado.bloqueadoAte = Number(salvo.bloqueadoAte) || 0;
       estado.bloqueados = Array.isArray(salvo.bloqueados) ? salvo.bloqueados : [];
+      estado.perguntaVista = String(salvo.perguntaVista || "");
     }
     desenharCarrinho();
     abrirConversa();
+    montaZap();
     vigiarEspera();
     if (!estado.chatId || !estado.token) {
       try {
         const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || cfg.fuso).slice(0, 60);
-        const r = await call("open_chat", { timezone: tz, modo: cfg.modo, table_label: emMesa ? mesaLabel : "" });
+        const r = await call("open_chat", {
+          timezone: tz,
+          modo: cfg.modo,
+          table_label: emMesa ? mesaLabel : "",
+          mesa_slug: mesaSlug,
+          mesa_numero: mesaNumero || null,
+        });
         if (r && r.ok) {
           estado.chatId = r.chat_id;
           estado.token = r.token;
