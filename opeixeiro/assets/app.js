@@ -12,6 +12,11 @@
     foneSessao: "",
     mesaMaxima: 150,
     peixeiroMaximo: 7,
+    // Casa que fala com o cliente. Vazio = Opeixeiro, como é hoje. A cópia /kioske/ usa
+    // { negocio: "Kioske Martin", emojiNegocio: "🏪" } e o pedido sai no banco como
+    // "Kioske Martin · Mesa 65", porque o rótulo canônico é montado no servidor com esse nome.
+    negocio: "",
+    emojiNegocio: "",
     foneAtendimento: "",
     autoAbrirWhatsApp: true,
   }, window.OPEIXEIRO_CONFIG || {});
@@ -63,14 +68,16 @@
   // mesa errada, a do config — e a página avisa o cliente para chamar a equipe. Base64 é formato
   // da etiqueta, não trava: por isso a faixa é conferida aqui e no servidor.
   const qrTrouxeMesa = mesaDaUrl !== "";
+  const nomeCasa = String(cfg.negocio || "").trim() || "Opeixeiro";
+  const emojiCasa = String(cfg.emojiNegocio || "").trim() || "🐟";
   const avisoQr = [
     !qrTrouxeMesa || mesaValida(mesaVindaDoQr)
       ? ""
       : mesaVindaDoQr > 0
-        ? `Este QR code aponta para a mesa ${mesaVindaDoQr}, que não existe aqui — só de 1 a ${mesaMaxima}. Chame a equipe do Opeixeiro.`
-        : "Este QR code não traz uma mesa reconhecível. Chame a equipe do Opeixeiro.",
+        ? `Este QR code aponta para a mesa ${mesaVindaDoQr}, que não existe aqui — só de 1 a ${mesaMaxima}. Chame a equipe do ${nomeCasa}.`
+        : `Este QR code não traz uma mesa reconhecível. Chame a equipe do ${nomeCasa}.`,
     peixeiroDoQr.fora
-      ? `Este QR code traz um ponto que não existe aqui — só de P1 a P${peixeiroMaximo}. Chame a equipe do Opeixeiro.`
+      ? `Este QR code traz um ponto que não existe aqui — só de P1 a P${peixeiroMaximo}. Chame a equipe do ${nomeCasa}.`
       : "",
   ].filter(Boolean).join(" ");
   if (mesaValida(mesaVindaDoQr)) cfg.mesa = String(mesaVindaDoQr);
@@ -756,6 +763,8 @@
         kind: "bebidas",
         modo: emMesa ? "mesa" : estado.cliente.retirada ? "balcao" : "delivery",
         table_label: emMesa ? mesaLabel : "",
+        // Só as páginas com casa própria (Kioske Martin) mandam isto aqui. Vazio = rótulo de sempre.
+        negocio: emMesa ? String(cfg.negocio || "").trim().slice(0, 18) : "",
         items: estado.cart.map((l) => ({ id: l.id, nome: l.nome, qtd: l.qtd, variante: l.variante, tipo: l.tipo || "bebida", preco: l.preco || 0 })),
         customer_name: estado.cliente.nome,
         customer_phone: estado.cliente.telefone,
@@ -1091,8 +1100,8 @@
       return;
     }
     diz(emMesa
-      ? `${saudacao()}! Este QR code é o pedido da ${mesaLabel || "sua mesa"} no Opeixeiro 🐟\n\n${h < 6 ? "Madrugada também é hora de bebida gelada. " : ""}Escolhe aqui e o garçon traz pra vocês.${(cfg.pontos || []).length ? `\n\n📍 Está no ponto errado? Toque em "${ponto || "escolher ponto"}" para trocar.` : ""}`
-      : `${saudacao()}! Aqui é o atendimento do Opeixeiro 🐟\n\n${h < 6 ? "Madrugada também é hora de bebida gelada." : "Me diz o que você quer beber."}`, 200);
+      ? `${saudacao()}! Este QR code é o pedido da ${mesaLabel || "sua mesa"} no ${nomeCasa} ${emojiCasa}\n\n${h < 6 ? "Madrugada também é hora de bebida gelada. " : ""}Escolhe aqui e o garçon traz pra vocês.${(cfg.pontos || []).length ? `\n\n📍 Está no ponto errado? Toque em "${ponto || "escolher ponto"}" para trocar.` : ""}`
+      : `${saudacao()}! Aqui é o atendimento do ${nomeCasa} ${emojiCasa}\n\n${h < 6 ? "Madrugada também é hora de bebida gelada." : "Me diz o que você quer beber."}`, 200);
     window.setTimeout(() => { if (!estado.historico.some((x) => x.tipo === "eu")) chips(chipsCategorias()); }, 700);
   }
 
@@ -1122,6 +1131,7 @@
           timezone: tz,
           modo: cfg.modo,
           table_label: emMesa ? mesaLabel : "",
+          negocio: emMesa ? String(cfg.negocio || "").trim().slice(0, 18) : "",
           mesa_slug: mesaSlug,
           mesa_numero: mesaNumero || null,
         });
