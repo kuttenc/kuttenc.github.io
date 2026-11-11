@@ -17,9 +17,11 @@
         // então o segmento é repassado inteiro como ?m= para a página decodificar ponto e mesa.
         // O prefixo do Urtador é aceito pelo mesmo motivo: a etiqueta impressa hoje é
         // /urtador/opeixeiro/mesaN e o 404 de lá também encaminha — o cliente chega igual.
-        const mesa = /(?:^|\/)opeixeiro\/((?:p\d{1,2}\s*)?mesa[a-z0-9+/=-]*)\/?$/i.exec(path);
+        // A casa vai junto porque /kioske/ é a outra etiqueta (mesas 1-150, sem ponto): se alguém
+        // imprimir o path em vez do ?m=, o cliente cai na própria casa, não no link curto do Urtador.
+        const mesa = /(?:^|\/)(opeixeiro|kioske)\/((?:p\d{1,2}\s*)?mesa[a-z0-9+/=-]*)\/?$/i.exec(path);
         if (mesa) {
-          window.location.replace(`/opeixeiro/${query}${query ? "&" : "?"}m=${encodeURIComponent(mesa[1])}${hash}`);
+          window.location.replace(`/${mesa[1]}/${query}${query ? "&" : "?"}m=${encodeURIComponent(mesa[2])}${hash}`);
           return;
         }
 
