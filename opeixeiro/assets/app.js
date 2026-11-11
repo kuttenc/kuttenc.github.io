@@ -89,7 +89,15 @@
   // Tudo que a página guarda vive dentro do escopo da mesa que o QR trouxe. Sem o número na chave,
   // o celular que abriu a Mesa 14 e depois escaneou a Mesa 7 continuaria na conversa, no ponto e no
   // final de telefone da 14 — e o pedido chegaria na mesa errada.
-  const escopo = emMesa ? `${cfg.modo}.m${mesaNumero || 0}` : cfg.modo;
+  // O nome da casa entra junto porque /opeixeiro/ e /kioske/ são o mesmo endereço na internet: sem
+  // ele, o cliente do quiosque retomaria a conversa da mesa de mesmo número do Opeixeiro. Casa vazia
+  // (Opeixeiro, entrega) deixa a chave exatamente como já é hoje, para ninguém perder o pedido aberto.
+  const escopoCasa = (() => {
+    const bruto = String(cfg.negocio || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+    return bruto ? `.${bruto}` : "";
+  })();
+  const escopo = emMesa ? `${cfg.modo}${escopoCasa}.m${mesaNumero || 0}` : `${cfg.modo}${escopoCasa}`;
   const sessao = {
     ler(nome) { try { return window.sessionStorage.getItem(`opeixeiro.${escopo}.${nome}`) || ""; } catch { return ""; } },
     gravar(nome, valor) { try { window.sessionStorage.setItem(`opeixeiro.${escopo}.${nome}`, valor); } catch { /* aba particular */ } },
