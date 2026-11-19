@@ -6,6 +6,7 @@
     <title>O Peixeiro - Painel de pedidos</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.5.2/qrcode.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
     <script src="opeixeiro-auth.js"></script>
     <style>
       :root {
@@ -244,6 +245,50 @@
         background: #18333d;
         border: 1px solid var(--line);
         font-size: 0.82rem;
+      }
+
+      .scan-ean-action {
+        width: 100%;
+        margin-bottom: 12px;
+      }
+
+      .ean-scanner-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.82);
+      }
+
+      .ean-scanner-layer.active {
+        display: flex;
+      }
+
+      .ean-scanner-content {
+        width: min(100%, 520px);
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel);
+      }
+
+      .ean-scanner-content video {
+        display: block;
+        width: 100%;
+        max-height: 55vh;
+        margin: 14px 0;
+        border-radius: 12px;
+        background: #000;
+        object-fit: cover;
+      }
+
+      .ean-scanner-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
       }
 
       .catalog {
@@ -499,6 +544,7 @@
         <div id="tab-pedidos" class="tab-panel active">
           <div class="panel" style="margin: 0 0 16px; background: rgba(16,43,53,.7);">
             <h2 style="font-size:1.15rem">Não encontrou o produto?</h2>
+            <button id="scanEanBtn" class="mini-action scan-ean-action" type="button">📷 Escanear código de barras (EAN)</button>
             <p class="small">Crie e inclua no seu pedido. Exemplo: Itubaína 600 ml.</p>
             <div class="grid">
               <div class="field"><label for="customProductName">Produto</label><input id="customProductName" placeholder="Ex.: Itubaína" /></div>
@@ -506,6 +552,7 @@
               <div class="field"><label for="customProductUnit">Unidade</label><select id="customProductUnit"><option value="unidade">Unidade</option><option value="caixa">Caixa</option><option value="pacote">Pacote</option><option value="barril">Barril</option><option value="maço de cana">Maço de cana</option><option value="kg">Quilo (kg)</option><option value="g">Grama (g)</option><option value="litro">Litro</option><option value="ml">Mililitro (ml)</option></select></div>
               <div class="field"><label for="customProductOrigin">De onde este produto costuma vir? (obrigatório)</label><select id="customProductOrigin"><option value="">Carregando locais...</option></select></div>
               <div class="field"><label for="customProductQty">Quantidade</label><input id="customProductQty" type="number" min="0.001" step="0.001" value="1" /></div>
+              <div class="field"><label for="customProductStock">Estoque atual (opcional)</label><input id="customProductStock" type="number" min="0" step="0.001" placeholder="Ex.: 5" /></div>
             </div>
             <button id="addCustomProductBtn" class="mini-action">Adicionar ao pedido</button>
             <div id="customProductStatus" class="small"></div>
@@ -595,6 +642,17 @@
       </div>
     </div>
 
+    <div id="eanScannerLayer" class="ean-scanner-layer" role="dialog" aria-modal="true" aria-labelledby="eanScannerTitle" aria-hidden="true">
+      <div class="ean-scanner-content">
+        <h2 id="eanScannerTitle" style="font-size:1.25rem">Escanear código EAN</h2>
+        <p id="eanScannerStatus" class="small" role="status">Aponte a câmera para o código de barras.</p>
+        <video id="eanScannerVideo" playsinline muted></video>
+        <div class="ean-scanner-actions">
+          <button id="closeEanScannerBtn" class="mini-action" type="button">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const SUPABASE_URL = 'https://suipuquznkksgrkchqrv.supabase.co';
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1aXB1cXV6bmtrc2dya2NocXJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc4NTksImV4cCI6MjA5NDk0Mzg1OX0.YF-_OfI6SC3aJvob6VB4C4qz3GXaUaAuezOg5eV1_GE';
@@ -608,7 +666,10 @@
         pendingKey: 'opeixeiro_pending_order_v1',
         dispatchWatchTimer: null,
         panelUsers: [],
-        allowedUnitCodes: []
+        allowedUnitCodes: [],
+        eanMediaStream: null,
+        eanReader: null,
+        eanScanActive: false
       };
 
       function setPanelAuthStatus(message, error = false) {
@@ -830,23 +891,138 @@
         renderCatalog();
       }
 
+      function stopEanScanner() {
+        state.eanScanActive = false;
+        if (state.eanReader) {
+          state.eanReader.reset();
+          state.eanReader = null;
+        }
+        if (state.eanMediaStream) {
+          state.eanMediaStream.getTracks().forEach(track => track.stop());
+          state.eanMediaStream = null;
+        }
+        const video = document.getElementById('eanScannerVideo');
+        video.pause();
+        video.srcObject = null;
+      }
+
+      function closeEanScanner() {
+        stopEanScanner();
+        const layer = document.getElementById('eanScannerLayer');
+        layer.classList.remove('active');
+        layer.setAttribute('aria-hidden', 'true');
+      }
+
+      function setEanScannerStatus(message, error = false) {
+        const status = document.getElementById('eanScannerStatus');
+        status.textContent = message;
+        status.style.color = error ? 'var(--danger)' : 'var(--muted)';
+      }
+
+      async function fillProductFromEan(barcode) {
+        const productStatus = document.getElementById('customProductStatus');
+        productStatus.textContent = 'Código lido. Consultando o catálogo aberto para sugerir o produto...';
+        productStatus.style.color = 'var(--muted)';
+        try {
+          const response = await fetch(
+            `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_pt,brands,quantity,product_quantity,product_quantity_unit`,
+            { headers: { Accept: 'application/json' } }
+          );
+          if (!response.ok) throw new Error(`Catálogo respondeu HTTP ${response.status}`);
+          const result = await response.json();
+          const product = result?.status === 1 ? result.product : null;
+          const productName = String(product?.product_name_pt || product?.product_name || product?.brands || '').trim();
+          if (!productName) {
+            productStatus.textContent = 'EAN lido, mas não encontrado no catálogo aberto. Preencha produto e apresentação manualmente.';
+            productStatus.style.color = 'var(--warning)';
+            document.getElementById('customProductName').focus();
+            return;
+          }
+          let presentation = String(product.quantity || '').trim();
+          if (!presentation && Number(product.product_quantity) > 0) {
+            presentation = `${product.product_quantity} ${String(product.product_quantity_unit || '').trim()}`.trim();
+          }
+          document.getElementById('customProductName').value = productName;
+          document.getElementById('customProductSize').value = presentation;
+          productStatus.textContent = presentation
+            ? `Sugestão preenchida para ${productName}. Confira os campos antes de adicionar.`
+            : `Produto preenchido como ${productName}. Apresentação não cadastrada; confira e complete antes de adicionar.`;
+          productStatus.style.color = 'var(--primary-2)';
+          document.getElementById('customProductName').focus();
+        } catch (error) {
+          productStatus.textContent = `EAN lido, mas não foi possível consultar o catálogo: ${error.message}. Preencha os campos manualmente.`;
+          productStatus.style.color = 'var(--danger)';
+          document.getElementById('customProductName').focus();
+        }
+      }
+
+      async function startEanScanner() {
+        const layer = document.getElementById('eanScannerLayer');
+        layer.classList.add('active');
+        layer.setAttribute('aria-hidden', 'false');
+        setEanScannerStatus('Aponte a câmera traseira para o código de barras.');
+        if (!window.ZXing?.BrowserMultiFormatReader) {
+          setEanScannerStatus('Não foi possível carregar o leitor de código de barras. Confira sua conexão e tente novamente.', true);
+          return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setEanScannerStatus('A câmera exige uma conexão segura (HTTPS) e permissão do navegador. Você também pode preencher os campos manualmente.', true);
+          return;
+        }
+        try {
+          const hints = new Map();
+          hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            window.ZXing.BarcodeFormat.EAN_13,
+            window.ZXing.BarcodeFormat.EAN_8,
+            window.ZXing.BarcodeFormat.UPC_A,
+            window.ZXing.BarcodeFormat.UPC_E,
+            window.ZXing.BarcodeFormat.ITF
+          ]);
+          hints.set(window.ZXing.DecodeHintType.TRY_HARDER, true);
+          const reader = new window.ZXing.BrowserMultiFormatReader(hints, 250);
+          state.eanReader = reader;
+          state.eanScanActive = true;
+          await reader.decodeFromConstraints(
+            { audio: false, video: { facingMode: { ideal: 'environment' } } },
+            document.getElementById('eanScannerVideo'),
+            result => {
+              if (!state.eanScanActive || !result) return;
+              const barcode = result.getText().trim();
+              if (!/^\d{8,14}$/.test(barcode)) return;
+              stopEanScanner();
+              setEanScannerStatus('EAN lido. Buscando nome e apresentação...');
+              fillProductFromEan(barcode).finally(closeEanScanner);
+            }
+          );
+          if (!state.eanScanActive) stopEanScanner();
+        } catch (error) {
+          stopEanScanner();
+          setEanScannerStatus(`Não foi possível abrir a câmera: ${error.message}. Confira a permissão do navegador e tente novamente.`, true);
+        }
+      }
+
       function addCustomProduct() {
         const baseName = document.getElementById('customProductName').value.trim();
         const size = document.getElementById('customProductSize').value.trim();
         const unit = document.getElementById('customProductUnit').value;
         const originUnitId = document.getElementById('customProductOrigin').value;
         const qty = Number(document.getElementById('customProductQty').value);
+        const stockField = document.getElementById('customProductStock');
+        const stock = stockField.value.trim() === '' ? null : Number(stockField.value);
         const status = document.getElementById('customProductStatus');
-        if (!baseName || !originUnitId || !Number.isFinite(qty) || qty <= 0) { status.textContent = 'Informe produto, origem habitual e quantidade maior que zero.'; status.style.color = 'var(--danger)'; return; }
+        if (!baseName || !originUnitId || !Number.isFinite(qty) || qty <= 0 || (stock !== null && (!Number.isFinite(stock) || stock < 0))) { status.textContent = 'Informe produto, origem habitual, quantidade maior que zero e um estoque válido (zero ou maior).'; status.style.color = 'var(--danger)'; return; }
         const name = size ? `${baseName} ${size}` : baseName;
         const existing = state.catalog.find(item => item.name.toLocaleLowerCase() === name.toLocaleLowerCase() && item.unit === unit && item.originUnitId === originUnitId);
-        if (existing) existing.qty += qty;
-        else state.catalog.unshift({ id: 'custom-' + Date.now(), name, qty, unit, originUnitId, historical: 0, isEmergency: true });
+        if (existing) {
+          existing.qty += qty;
+          existing.stock = stock;
+        } else state.catalog.unshift({ id: 'custom-' + Date.now(), name, qty, unit, originUnitId, historical: 0, isEmergency: true, stock });
         document.getElementById('customProductName').value = '';
         document.getElementById('customProductSize').value = '';
         document.getElementById('customProductQty').value = '1';
+        stockField.value = '';
         const originName = document.getElementById('customProductOrigin').selectedOptions[0]?.textContent || 'origem definida';
-        status.textContent = `${name} adicionado ao pedido em ${unit}. Coleta: ${originName}.`;
+        status.textContent = `${name} adicionado ao pedido em ${unit}. Coleta: ${originName}.${stock === null ? '' : ` Estoque informado: ${stock} ${unit}.`}`;
         status.style.color = 'var(--primary-2)';
         renderCatalog();
       }
@@ -930,7 +1106,7 @@
 
       function generatePayload() {
         const selected = state.catalog.filter(item => Number(item.qty) > 0);
-        const items = selected.map(item => ({ name: item.name, qty: Number(item.qty), unit: item.unit || 'unidade', origin_unit_id: item.originUnitId || null, is_emergency: Boolean(item.isEmergency) }));
+        const items = selected.map(item => ({ name: item.name, qty: Number(item.qty), unit: item.unit || 'unidade', origin_unit_id: item.originUnitId || null, is_emergency: Boolean(item.isEmergency), ...(Number.isFinite(item.stock) && item.stock >= 0 ? { stock: item.stock } : {}) }));
         const payload = {
           profile: state.profile,
           unit: state.unit,
@@ -1285,6 +1461,11 @@
         document.querySelector(`[data-receipt-qr-id="${receiptId}"]`)?.remove(); closeQrFocus(); await loadReceiptOrders();
       });
       document.getElementById('addCustomProductBtn').addEventListener('click', addCustomProduct);
+      document.getElementById('scanEanBtn').addEventListener('click', startEanScanner);
+      document.getElementById('closeEanScannerBtn').addEventListener('click', closeEanScanner);
+      document.getElementById('eanScannerLayer').addEventListener('click', event => {
+        if (event.target.id === 'eanScannerLayer') closeEanScanner();
+      });
       document.getElementById('toggleVoiceAssistantBtn').addEventListener('click', () => {
         setVoiceAssistant(localStorage.getItem('opeixeiro_voice_assistant_enabled') !== 'true');
       });
