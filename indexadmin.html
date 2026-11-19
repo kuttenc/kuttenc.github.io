@@ -743,13 +743,50 @@
           </div>
           <div id="ordersContactsContent" class="hidden">
             <div id="ordersContactsGroup" class="card"></div>
+            <div class="card">
+              <h3>Adicionar telefone e ligar ao perfil</h3>
+              <p class="small">
+                Use quando o telefone ainda não aparece na lista abaixo.
+                Escolha o perfil correto: esse vínculo é usado para enviar a
+                recuperação de senha ao WhatsApp particular. Confirme o número
+                com a pessoa antes de salvar.
+              </p>
+              <div class="grid">
+                <div class="field">
+                  <label for="newOrdersContactPhone">Telefone com DDI e DDD</label>
+                  <input
+                    id="newOrdersContactPhone"
+                    type="tel"
+                    autocomplete="tel"
+                    placeholder="+55 12 99999-9999"
+                  />
+                </div>
+                <div class="field">
+                  <label for="newOrdersContactName">Nome da pessoa</label>
+                  <input id="newOrdersContactName" autocomplete="name" />
+                </div>
+                <div class="field">
+                  <label for="newOrdersContactProfile">Vincular ao perfil</label>
+                  <select id="newOrdersContactProfile"></select>
+                </div>
+              </div>
+              <label>
+                <input type="checkbox" id="newOrdersContactIsGroupMember" />
+                Essa pessoa também participa do grupo Pedidos
+              </label>
+              <button class="primary" id="addOrdersContactButton" type="button">
+                Salvar telefone e perfil
+              </button>
+              <div class="status" id="newOrdersContactStatus" role="status"></div>
+            </div>
             <div class="row">
-              <h3>Telefones identificados no grupo de pedidos</h3>
+              <h3>Números que já falaram no grupo Pedidos</h3>
               <button id="reloadOrdersContacts">Atualizar</button>
             </div>
             <p class="small">
-              “No grupo” indica o último contato identificado pelo bot/webhook.
-              Selecione o perfil e o setor correspondente, depois salve.
+              Para vincular um número que já está nesta lista, escolha a pessoa
+              em “Vincular ao perfil” e clique em “Salvar contato e perfil”.
+              “No grupo” mostra se a participação foi confirmada pelo bot.
             </p>
             <div
               id="ordersContactsList"
@@ -3509,13 +3546,18 @@
             const unit = units.find((item) => item.id === id);
             return unit ? unit.name || unit.code : "Setor não informado";
           };
+        $("newOrdersContactProfile").innerHTML = ordersContactOptions(
+          profiles,
+          null,
+          "Escolha o perfil",
+        );
         $("ordersContactsGroup").innerHTML =
           `<b>${esc(group.name || "Grupo de pedidos")}</b><div class="small">ID: ${esc(group.chat_id || "")} · Bot: ${group.bot_enabled ? "ativo" : "em preparação"} · Mensagens automáticas: desativadas</div>`;
         $("ordersContactsList").innerHTML =
           contacts
             .map(
               (contact) =>
-                `<div class="card"><div class="grid"><div class="field"><label>Telefone</label><input data-orders-phone="${contact.id}" value="${esc(contact.phone_e164)}"></div><div class="field"><label>Nome identificado</label><input data-orders-name="${contact.id}" value="${esc(contact.display_name || "")}"></div><div class="field"><label>Perfil no sistema</label><select data-orders-profile="${contact.id}">${ordersContactOptions(profiles, contact.panel_user_id, "Não vinculado")}</select></div><div class="field"><label>Setor / unidade</label><select data-orders-unit="${contact.id}">${ordersContactOptions(units, contact.unit_id, "Não vinculado")}</select></div></div><div class="small">No grupo: <b>${contact.is_group_member ? "Sim" : "Não confirmado"}</b> · Último contato: ${contact.last_seen_at ? new Date(contact.last_seen_at).toLocaleString("pt-BR") : "Ainda não identificado"}</div><label><input type="checkbox" data-orders-member="${contact.id}" ${contact.is_group_member ? "checked" : ""}> Está no grupo</label> <button data-save-orders-contact="${contact.id}">Salvar vínculo</button></div>`,
+                `<div class="card"><div class="grid"><div class="field"><label>Telefone</label><input data-orders-phone="${contact.id}" value="${esc(contact.phone_e164)}"></div><div class="field"><label>Nome identificado</label><input data-orders-name="${contact.id}" value="${esc(contact.display_name || "")}"></div><div class="field"><label>Vincular ao perfil</label><select data-orders-profile="${contact.id}">${ordersContactOptions(profiles, contact.panel_user_id, "Escolha o perfil")}</select><div class="small">Usado para enviar recuperação de senha ao perfil.</div></div><div class="field"><label>Setor / unidade</label><select data-orders-unit="${contact.id}">${ordersContactOptions(units, contact.unit_id, "Não vinculado")}</select></div></div><div class="small">No grupo: <b>${contact.is_group_member ? "Sim" : "Não confirmado"}</b> · Último contato: ${contact.last_seen_at ? new Date(contact.last_seen_at).toLocaleString("pt-BR") : "Ainda não identificado"}</div><label><input type="checkbox" data-orders-member="${contact.id}" ${contact.is_group_member ? "checked" : ""}> Está no grupo</label> <button data-save-orders-contact="${contact.id}">Salvar contato e perfil</button></div>`,
             )
             .join("") || "<p>Nenhum telefone identificado ainda.</p>";
         $("logisticsContactsList").innerHTML =
@@ -3525,6 +3567,54 @@
                 `<div class="card"><b>${esc(contact.display_name)}</b><div class="small">${esc(contact.phone_e164)} · Responsável por: <b>${esc(unitName(contact.unit_id))}</b> · ${contact.active ? "Autorizado" : "Inativo"}</div></div>`,
             )
             .join("") || "<p>Nenhum responsável de logística cadastrado.</p>";
+        $("addOrdersContactButton").onclick = async () => {
+          const button = $("addOrdersContactButton");
+          const phone = $("newOrdersContactPhone").value.trim();
+          const name = $("newOrdersContactName").value.trim();
+          const profileId = $("newOrdersContactProfile").value;
+          if (!phone) {
+            status("newOrdersContactStatus", "Informe o telefone com DDI e DDD.", true);
+            return;
+          }
+          if (!profileId) {
+            status("newOrdersContactStatus", "Escolha o perfil dessa pessoa.", true);
+            return;
+          }
+          try {
+            button.disabled = true;
+            status("newOrdersContactStatus", "Salvando telefone e vínculo...");
+            const { error } = await db.rpc(
+              "opeixeiro_orders_group_save_contact",
+              {
+                p_password: ordersGroupAdminPassword,
+                p_contact_id: null,
+                p_phone_e164: phone,
+                p_display_name: name,
+                p_panel_user_id: profileId,
+                p_unit_id: null,
+                p_is_group_member: $("newOrdersContactIsGroupMember").checked,
+              },
+            );
+            if (error) throw error;
+            $("newOrdersContactPhone").value = "";
+            $("newOrdersContactName").value = "";
+            $("newOrdersContactProfile").value = "";
+            $("newOrdersContactIsGroupMember").checked = false;
+            status(
+              "newOrdersContactStatus",
+              "Telefone salvo e ligado ao perfil. Agora você pode pedir a recuperação de senha na aba Perfis.",
+            );
+            await loadOrdersContacts();
+          } catch (error) {
+            status(
+              "newOrdersContactStatus",
+              error.message || "Não foi possível salvar o telefone e o perfil.",
+              true,
+            );
+          } finally {
+            button.disabled = false;
+          }
+        };
         document.querySelectorAll("[data-save-orders-contact]").forEach(
           (button) =>
             (button.onclick = async () => {
