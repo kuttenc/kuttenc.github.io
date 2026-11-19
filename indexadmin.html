@@ -245,8 +245,8 @@
       <section class="panel" id="login">
         <h2>Acesso administrativo</h2>
         <p class="small">
-          Para entrar, confirme sua senha e depois digite o código de seis
-          dígitos enviado ao WhatsApp privado confirmado do seu perfil.
+          Entre com sua senha. O acesso ao painel não depende da conexão do
+          WhatsApp.
         </p>
         <div class="grid">
           <div class="field">
@@ -256,13 +256,8 @@
           <div class="field hidden" id="passwordBox">
             <label>Senha</label><input id="adminPassword" type="password" />
           </div>
-          <div class="field hidden" id="adminLoginOtpBox">
-            <label for="adminLoginOtp">Código de segundo fator (6 dígitos)</label>
-            <input id="adminLoginOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
-          </div>
         </div>
-        <button class="primary" id="loginBtn">Enviar código e continuar</button>
-        <button type="button" class="hidden" id="adminLoginResend">Enviar novo código</button>
+        <button class="primary" id="loginBtn">Entrar com senha</button>
         <div class="status" id="loginStatus"></div>
         <details class="recovery" id="passwordRecoveryBox">
           <summary>Esqueci minha senha</summary>
@@ -937,39 +932,12 @@
           status(
             "loginStatus",
             users.length
-              ? "O acesso exige senha e código enviado ao WhatsApp privado confirmado."
+              ? "Use sua senha para entrar. O login não depende do WhatsApp."
               : "Nenhum perfil administrador ativo está disponível.",
             !users.length,
           );
         } catch (error) {
           status("loginStatus", error.message, true);
-        }
-      }
-      let adminLoginChallenge = "";
-      function resetAdminLoginChallenge() {
-        adminLoginChallenge = "";
-        $("adminLoginOtp").value = "";
-        $("adminLoginOtpBox").classList.add("hidden");
-        $("adminLoginResend").classList.add("hidden");
-        $("loginBtn").textContent = "Enviar código e continuar";
-      }
-      async function resendAdminLoginCode() {
-        const resendButton = $("adminLoginResend");
-        const previousChallenge = adminLoginChallenge;
-        const previousCode = $("adminLoginOtp").value;
-        resendButton.disabled = true;
-        try {
-          resetAdminLoginChallenge();
-          await login();
-          if (!adminLoginChallenge && previousChallenge) {
-            adminLoginChallenge = previousChallenge;
-            $("adminLoginOtp").value = previousCode;
-            $("adminLoginOtpBox").classList.remove("hidden");
-            resendButton.classList.remove("hidden");
-            $("loginBtn").textContent = "Confirmar código e entrar";
-          }
-        } finally {
-          resendButton.disabled = false;
         }
       }
       async function invokeAdminAuth(body) {
@@ -999,7 +967,6 @@
         if (error) throw error;
         adminName = data.actor.display_name;
         $("adminPassword").value = "";
-        resetAdminLoginChallenge();
         $("login").classList.add("hidden");
         $("dashboard").classList.remove("hidden");
         $("welcome").textContent = "Olá, " + adminName;
@@ -1115,32 +1082,11 @@
         const button = $("loginBtn");
         button.disabled = true;
         try {
-          if (!adminLoginChallenge) {
-            const data = await invokeAdminAuth({
-              action: "request_admin_login_code",
-              display_name: name,
-              password,
-            });
-            adminLoginChallenge = data.challenge_id;
-            $("adminLoginOtpBox").classList.remove("hidden");
-            $("adminLoginResend").classList.remove("hidden");
-            $("adminLoginOtp").focus();
-            button.textContent = "Confirmar código e entrar";
-            return status(
-              "loginStatus",
-              "Código enviado ao WhatsApp privado confirmado. Digite-o em até 5 minutos.",
-            );
-          }
-          const code = $("adminLoginOtp").value.replace(/\D/g, "");
-          if (!/^\d{6}$/.test(code)) {
-            return status("loginStatus", "Digite os seis dígitos recebidos.", true);
-          }
           const data = await invokeAdminAuth({
-            action: "confirm_admin_login",
-            challenge_id: adminLoginChallenge,
+            action: "login",
+            kind: "panel",
             display_name: name,
             password,
-            code,
           });
           await completeAdminSignIn(data);
         } catch (error) {
@@ -1149,11 +1095,6 @@
           button.disabled = false;
         }
       }
-      $("adminProfile").addEventListener("change", resetAdminLoginChallenge);
-      $("adminLoginResend").onclick = resendAdminLoginCode;
-      $("adminLoginOtp").addEventListener("input", () => {
-        $("adminLoginOtp").value = $("adminLoginOtp").value.replace(/\D/g, "").slice(0, 6);
-      });
       async function loadAnnualChecklistOwner() {
         status("annualChecklistOwnerStatus", "Carregando responsável...");
         const { data, error } = await db.functions.invoke("opeixeiro-auth", { body: { action: "get_annual_checklist_owner" } });
