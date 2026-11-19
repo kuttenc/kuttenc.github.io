@@ -245,8 +245,8 @@
       <section class="panel" id="login">
         <h2>Acesso administrativo</h2>
         <p class="small">
-          Selecione seu perfil. Enquanto as senhas estão desligadas no Supabase,
-          entra sem senha.
+          Para entrar, confirme sua senha e depois digite o código de seis
+          dígitos enviado ao WhatsApp privado confirmado do seu perfil.
         </p>
         <div class="grid">
           <div class="field">
@@ -256,13 +256,18 @@
           <div class="field hidden" id="passwordBox">
             <label>Senha</label><input id="adminPassword" type="password" />
           </div>
+          <div class="field hidden" id="adminLoginOtpBox">
+            <label for="adminLoginOtp">Código de segundo fator (6 dígitos)</label>
+            <input id="adminLoginOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
+          </div>
         </div>
-        <button class="primary" id="loginBtn">Entrar no painel</button>
+        <button class="primary" id="loginBtn">Enviar código e continuar</button>
+        <button type="button" class="hidden" id="adminLoginResend">Enviar novo código</button>
         <div class="status" id="loginStatus"></div>
         <details class="recovery" id="passwordRecoveryBox">
           <summary>Esqueci minha senha</summary>
-          <p class="small">O código de recuperação será enviado ao grupo OTP. Ele vale por 10 minutos e só pode ser usado uma vez.</p>
-          <button type="button" id="requestPasswordRecovery">Enviar código ao grupo OTP</button>
+          <p class="small">O código de recuperação será enviado individualmente ao WhatsApp privado vinculado ao perfil. Ele vale por 10 minutos e só pode ser usado uma vez.</p>
+          <button type="button" id="requestPasswordRecovery">Enviar código ao WhatsApp</button>
           <div class="grid recovery-fields">
             <div class="field"><label>Código de 6 dígitos</label><input id="recoveryCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" /></div>
             <div class="field"><label>Nova senha</label><input id="recoveryPassword" type="password" autocomplete="new-password" minlength="8" /></div>
@@ -270,6 +275,29 @@
           <button type="button" class="primary" id="confirmPasswordRecovery">Confirmar código e salvar senha</button>
           <div class="status" id="recoveryStatus"></div>
         </details>
+      </section>
+      <section class="panel hidden" id="publicPasswordReset">
+        <h2>Redefinir senha</h2>
+        <p class="small">
+          Confirme o código recebido no WhatsApp privado e escolha sua nova
+          senha. O código vence em 10 minutos e só pode ser usado uma vez.
+        </p>
+        <div class="grid">
+          <div class="field">
+            <label for="adminResetCode">Código de confirmação</label>
+            <input id="adminResetCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+          </div>
+          <div class="field">
+            <label for="adminResetPassword">Nova senha</label>
+            <input id="adminResetPassword" type="password" autocomplete="new-password" minlength="8" />
+          </div>
+          <div class="field">
+            <label for="adminResetPasswordConfirm">Confirme a nova senha</label>
+            <input id="adminResetPasswordConfirm" type="password" autocomplete="new-password" minlength="8" />
+          </div>
+        </div>
+        <button class="primary" id="adminResetSubmit">Salvar nova senha</button>
+        <div class="status" id="adminResetStatus" role="status"></div>
       </section>
       <section class="panel hidden" id="dashboard">
         <div class="row">
@@ -295,6 +323,24 @@
           ><button data-tab="learn">Saiba mais</button>
         </nav>
         <div id="hours" class="tab">
+          <div class="step">
+            <div class="step-title">Quantidade de peixeiros/restaurantes</div>
+            <p class="small">
+              Define quais unidades numeradas de P1 até Pn podem aparecer na
+              escolha depois do login. Alterar este número não cadastra
+              estabelecimentos nem concede acesso a perfis.
+            </p>
+            <div class="grid">
+              <div class="field">
+                <label for="restaurantCount">Quantidade atual (P1 até Pn)</label>
+                <input id="restaurantCount" type="number" min="1" max="20" step="1" inputmode="numeric" />
+              </div>
+            </div>
+            <div class="row">
+              <button class="primary" id="saveRestaurantCount">Salvar quantidade</button>
+            </div>
+            <div class="status" id="restaurantCountStatus"></div>
+          </div>
           <div class="grid">
             <div class="field">
               <label>Limite de coleta</label
@@ -312,7 +358,7 @@
         </div>
         <div id="users" class="tab hidden">
           <div class="row">
-            <button class="primary" id="newUser">Novo perfil</button
+            <button class="primary" id="newUser">Criar perfil seguro</button
             ><button id="reloadUsers">Atualizar</button>
           </div>
           <p class="small">
@@ -320,6 +366,53 @@
             Para criar ou editar opções da lista, use “Gerenciar
             estabelecimentos”.
           </p>
+          <details class="step" id="createPanelProfileForm">
+            <summary class="step-title">Cadastro protegido de perfil</summary>
+            <p class="small">
+              A criação exige uma sessão administrativa válida. A senha inicial
+              precisa ter ao menos 12 caracteres e é armazenada somente como
+              hash. A troca no primeiro login não é forçada. Compartilhe-a
+              apenas em conversa privada; nunca em grupos.
+            </p>
+            <div class="grid">
+              <div class="field">
+                <label for="createPanelProfileName">Nome do perfil</label>
+                <input id="createPanelProfileName" maxlength="80" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="createPanelProfileRole">Tipo de acesso</label>
+                <select id="createPanelProfileRole">
+                  <option value="operational">Operacional — unidades selecionadas</option>
+                  <option value="admin">Administrador — acesso amplo</option>
+                </select>
+              </div>
+            </div>
+            <div class="field" id="createPanelProfileUnitsField">
+              <label>Unidades autorizadas</label>
+              <div id="createPanelProfileUnits" class="card"></div>
+            </div>
+            <label id="confirmCreatePanelAdminField" class="small hidden">
+              <input id="confirmCreatePanelAdmin" type="checkbox" style="width:auto" />
+              Confirmo que este perfil deve receber acesso administrativo amplo.
+            </label>
+            <div class="grid">
+              <div class="field">
+                <label for="createPanelProfilePassword">Senha inicial (12 a 72 bytes)</label>
+                <input id="createPanelProfilePassword" type="password" minlength="12" autocomplete="new-password" />
+              </div>
+              <div class="field">
+                <label for="createPanelProfilePasswordConfirm">Confirmar senha</label>
+                <input id="createPanelProfilePasswordConfirm" type="password" minlength="12" autocomplete="new-password" />
+              </div>
+            </div>
+            <div class="row">
+              <button id="generatePanelProfilePassword" type="button">Gerar senha aleatória</button>
+              <button id="copyPanelProfilePassword" type="button">Copiar senha</button>
+              <label class="small"><input id="showPanelProfilePassword" type="checkbox" style="width:auto" /> Mostrar senha</label>
+              <button class="primary" id="createPanelProfileButton" type="button">Criar perfil</button>
+            </div>
+            <div id="createPanelProfileStatus" class="status" role="status"></div>
+          </details>
           <div class="step">
             <div class="step-title">Alterar senha de perfil</div>
             <p class="small">
@@ -343,6 +436,18 @@
             </div>
             <button id="saveProfilePassword">Alterar senha</button>
             <div id="profilePasswordStatus" class="status"></div>
+          </div>
+          <div class="step">
+            <div class="step-title">Enviar redefinição segura de senha</div>
+            <p class="small">
+              Envia um link e um código ao WhatsApp privado confirmado do
+              perfil. O colaborador define a nova senha; a senha atual não
+              muda até a confirmação. O link expira em 10 minutos.
+            </p>
+            <button class="primary" id="sendProfilePasswordReset" type="button">
+              Enviar link de redefinição
+            </button>
+            <div id="profilePasswordResetStatus" class="status" role="status"></div>
           </div>
           <div class="list" id="usersList"></div>
         </div>
@@ -809,24 +914,103 @@
         e.className = "status " + (error ? "error" : "ok");
       }
       async function boot() {
+        const resetChallenge = new URLSearchParams(location.search).get("reset_password");
+        if (resetChallenge !== null) {
+          $("login").classList.add("hidden");
+          $("dashboard").classList.add("hidden");
+          $("publicPasswordReset").classList.remove("hidden");
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resetChallenge)) {
+            status("adminResetStatus", "Este link de redefinição é inválido.", true);
+          } else {
+            $("adminResetCode").focus();
+          }
+          return;
+        }
         try {
-          users = await window.OpeixeiroAuth.listProfiles(db, "panel");
+          users = (await window.OpeixeiroAuth.listProfiles(db, "panel"))
+            .filter((user) => user.is_admin === true);
           $("passwordBox").classList.remove("hidden");
           $("adminProfile").replaceChildren(new Option("Selecione", ""));
           for (const user of users) {
             $("adminProfile").add(new Option(user.display_name, user.display_name));
           }
-          status("loginStatus", "Entre com sua senha individual de administrador.");
+          status(
+            "loginStatus",
+            users.length
+              ? "O acesso exige senha e código enviado ao WhatsApp privado confirmado."
+              : "Nenhum perfil administrador ativo está disponível.",
+            !users.length,
+          );
         } catch (error) {
           status("loginStatus", error.message, true);
         }
+      }
+      let adminLoginChallenge = "";
+      function resetAdminLoginChallenge() {
+        adminLoginChallenge = "";
+        $("adminLoginOtp").value = "";
+        $("adminLoginOtpBox").classList.add("hidden");
+        $("adminLoginResend").classList.add("hidden");
+        $("loginBtn").textContent = "Enviar código e continuar";
+      }
+      async function resendAdminLoginCode() {
+        const resendButton = $("adminLoginResend");
+        const previousChallenge = adminLoginChallenge;
+        const previousCode = $("adminLoginOtp").value;
+        resendButton.disabled = true;
+        try {
+          resetAdminLoginChallenge();
+          await login();
+          if (!adminLoginChallenge && previousChallenge) {
+            adminLoginChallenge = previousChallenge;
+            $("adminLoginOtp").value = previousCode;
+            $("adminLoginOtpBox").classList.remove("hidden");
+            resendButton.classList.remove("hidden");
+            $("loginBtn").textContent = "Confirmar código e entrar";
+          }
+        } finally {
+          resendButton.disabled = false;
+        }
+      }
+      async function invokeAdminAuth(body) {
+        const { data, error } = await db.functions.invoke("opeixeiro-auth", { body });
+        if (error) {
+          let message = error.message || "Não foi possível concluir a autenticação.";
+          try {
+            const context = error.context?.clone ? error.context.clone() : error.context;
+            const detail = context ? await context.json() : null;
+            if (detail?.error) message = detail.error;
+          } catch {
+            // Keep the Functions client's explicit error when no JSON body exists.
+          }
+          throw new Error(message);
+        }
+        if (data?.error) throw new Error(data.error);
+        return data;
+      }
+      async function completeAdminSignIn(data) {
+        if (!data?.session?.access_token || !data?.session?.refresh_token) {
+          throw new Error("A autenticação não retornou uma sessão válida.");
+        }
+        if (data.actor?.is_admin !== true) {
+          throw new Error("Este perfil não tem acesso administrativo.");
+        }
+        const { error } = await db.auth.setSession(data.session);
+        if (error) throw error;
+        adminName = data.actor.display_name;
+        $("adminPassword").value = "";
+        resetAdminLoginChallenge();
+        $("login").classList.add("hidden");
+        $("dashboard").classList.remove("hidden");
+        $("welcome").textContent = "Olá, " + adminName;
+        await loadHours();
       }
       let passwordRecoveryChallenge = "";
       async function requestPasswordRecovery() {
         const displayName = $("adminProfile").value;
         if (!displayName) return status("recoveryStatus", "Selecione o perfil cuja senha será recuperada.", true);
         $("requestPasswordRecovery").disabled = true;
-        status("recoveryStatus", "Enviando o código ao grupo OTP...");
+        status("recoveryStatus", "Enviando o código ao WhatsApp privado vinculado...");
         try {
           const { data, error } = await db.functions.invoke("opeixeiro-auth", {
             body: { action: "request_password_recovery", kind: "panel", display_name: displayName },
@@ -834,7 +1018,7 @@
           if (error || data?.error) throw new Error(data?.error || error?.message || "Não foi possível iniciar a recuperação.");
           passwordRecoveryChallenge = data.challenge_id;
           $("recoveryCode").focus();
-          status("recoveryStatus", "Código enviado ao grupo OTP. Digite os seis números e crie a nova senha.");
+          status("recoveryStatus", "Código enviado ao WhatsApp privado vinculado. Digite os seis números e crie a nova senha.");
         } catch (error) {
           status("recoveryStatus", error.message || "Não foi possível enviar o código.", true);
         } finally {
@@ -842,7 +1026,7 @@
         }
       }
       async function confirmPasswordRecovery() {
-        if (!passwordRecoveryChallenge) return status("recoveryStatus", "Peça primeiro um código ao grupo OTP.", true);
+        if (!passwordRecoveryChallenge) return status("recoveryStatus", "Peça primeiro um código ao WhatsApp privado vinculado.", true);
         const code = $("recoveryCode").value.replace(/\D/g, "");
         const password = $("recoveryPassword").value;
         if (!/^\d{6}$/.test(code) || password.length < 8) return status("recoveryStatus", "Informe os seis dígitos e uma senha de pelo menos 8 caracteres.", true);
@@ -865,31 +1049,111 @@
           $("confirmPasswordRecovery").disabled = false;
         }
       }
+      async function completeAdminPasswordReset() {
+        const challengeId = new URLSearchParams(location.search).get("reset_password");
+        const code = $("adminResetCode").value.replace(/\D/g, "");
+        const password = $("adminResetPassword").value;
+        const confirmation = $("adminResetPasswordConfirm").value;
+        if (!challengeId) return status("adminResetStatus", "Link de redefinição inválido.", true);
+        if (!/^\d{6}$/.test(code)) return status("adminResetStatus", "Digite os seis dígitos recebidos no WhatsApp.", true);
+        if (password.length < 8) return status("adminResetStatus", "A nova senha precisa ter pelo menos 8 caracteres.", true);
+        if (password !== confirmation) return status("adminResetStatus", "As senhas não conferem.", true);
+
+        const button = $("adminResetSubmit");
+        button.disabled = true;
+        status("adminResetStatus", "Confirmando o código e salvando a senha...");
+        try {
+          await invokeAdminAuth({
+            action: "confirm_password_recovery",
+            kind: "panel",
+            challenge_id: challengeId,
+            code,
+            password,
+          });
+          $("adminResetCode").value = "";
+          $("adminResetPassword").value = "";
+          $("adminResetPasswordConfirm").value = "";
+          history.replaceState(null, "", location.pathname);
+          status("adminResetStatus", "Senha alterada. Agora você já pode entrar com a nova senha.");
+          window.setTimeout(() => {
+            $("publicPasswordReset").classList.add("hidden");
+            $("login").classList.remove("hidden");
+            boot();
+          }, 1200);
+        } catch (error) {
+          status("adminResetStatus", error.message || "Não foi possível redefinir a senha.", true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+      async function sendProfilePasswordReset() {
+        const profileId = $("profilePasswordUser").value;
+        if (!profileId) return status("profilePasswordResetStatus", "Selecione um perfil.", true);
+        const profileName = $("profilePasswordUser").selectedOptions[0]?.textContent || "este perfil";
+        if (!window.confirm(`Enviar um link de redefinição de senha para ${profileName} pelo WhatsApp privado confirmado?`)) return;
+
+        const button = $("sendProfilePasswordReset");
+        button.disabled = true;
+        status("profilePasswordResetStatus", "Enviando link e código ao contato privado confirmado...");
+        try {
+          const result = await invokeAdminAuth({
+            action: "request_admin_password_reset",
+            profile_id: profileId,
+          });
+          status("profilePasswordResetStatus", result.message || "Link de redefinição enviado ao contato privado confirmado.");
+        } catch (error) {
+          status("profilePasswordResetStatus", error.message || "Não foi possível enviar a redefinição.", true);
+        } finally {
+          button.disabled = false;
+        }
+      }
       async function login() {
         const name = $("adminProfile").value;
         if (!name) return status("loginStatus", "Selecione um perfil.", true);
+        const password = $("adminPassword").value;
+        if (!password) return status("loginStatus", "Informe sua senha.", true);
+        const button = $("loginBtn");
+        button.disabled = true;
         try {
-          const actor = await window.OpeixeiroAuth.signIn(
-            db,
-            "panel",
-            name,
-            $("adminPassword").value
-          );
-          $("adminPassword").value = "";
-          if (!actor.is_admin) {
-            await db.auth.signOut();
-            return status("loginStatus", "A senha foi aceita, mas este perfil não é administrador. Use o perfil administrativo para este painel.", true);
+          if (!adminLoginChallenge) {
+            const data = await invokeAdminAuth({
+              action: "request_admin_login_code",
+              display_name: name,
+              password,
+            });
+            adminLoginChallenge = data.challenge_id;
+            $("adminLoginOtpBox").classList.remove("hidden");
+            $("adminLoginResend").classList.remove("hidden");
+            $("adminLoginOtp").focus();
+            button.textContent = "Confirmar código e entrar";
+            return status(
+              "loginStatus",
+              "Código enviado ao WhatsApp privado confirmado. Digite-o em até 5 minutos.",
+            );
           }
-          adminName = actor.display_name;
-          $("login").classList.add("hidden");
-          $("dashboard").classList.remove("hidden");
-          $("welcome").textContent = "Olá, " + adminName;
-          await loadHours();
+          const code = $("adminLoginOtp").value.replace(/\D/g, "");
+          if (!/^\d{6}$/.test(code)) {
+            return status("loginStatus", "Digite os seis dígitos recebidos.", true);
+          }
+          const data = await invokeAdminAuth({
+            action: "confirm_admin_login",
+            challenge_id: adminLoginChallenge,
+            display_name: name,
+            password,
+            code,
+          });
+          await completeAdminSignIn(data);
         } catch (error) {
-          $("adminPassword").value = "";
           status("loginStatus", error.message || "Não foi possível autenticar.", true);
+        } finally {
+          button.disabled = false;
         }
       }
+      $("adminProfile").addEventListener("change", resetAdminLoginChallenge);
+      $("adminLoginResend").onclick = resendAdminLoginCode;
+      $("adminLoginOtp").addEventListener("input", () => {
+        $("adminLoginOtp").value = $("adminLoginOtp").value.replace(/\D/g, "").slice(0, 6);
+      });
       async function loadAnnualChecklistOwner() {
         status("annualChecklistOwnerStatus", "Carregando responsável...");
         const { data, error } = await db.functions.invoke("opeixeiro-auth", { body: { action: "get_annual_checklist_owner" } });
@@ -910,13 +1174,33 @@
       async function loadHours() {
         const { data, error } = await db
           .from("opeixeiro_access_settings")
-          .select("collection_cutoff_time,next_day_schedule_cutoff_time")
+          .select("collection_cutoff_time,next_day_schedule_cutoff_time,restaurant_count")
           .eq("id", true)
           .maybeSingle();
         if (error) return status("hoursStatus", error.message, true);
         $("collectionTime").value = data.collection_cutoff_time.slice(0, 5);
         $("nextDayTime").value = data.next_day_schedule_cutoff_time.slice(0, 5);
+        $("restaurantCount").value = data.restaurant_count ?? 7;
         status("hoursStatus", "Horários carregados.");
+      }
+      async function saveRestaurantCount() {
+        const restaurantCount = Number($("restaurantCount").value);
+        if (!Number.isInteger(restaurantCount) || restaurantCount < 1 || restaurantCount > 20) {
+          return status("restaurantCountStatus", "Informe um número inteiro entre 1 e 20.", true);
+        }
+        status("restaurantCountStatus", "Salvando quantidade...");
+        const { error } = await db
+          .from("opeixeiro_access_settings")
+          .update({
+            restaurant_count: restaurantCount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", true);
+        if (error) return status("restaurantCountStatus", error.message, true);
+        status(
+          "restaurantCountStatus",
+          `Quantidade salva: P1 até P${restaurantCount}. Confira se todos os estabelecimentos estão cadastrados e ativos em “Gerenciar estabelecimentos”.`,
+        );
       }
       async function saveHours() {
         const { error } = await db
@@ -1143,6 +1427,7 @@
           return;
         }
         const units = unitsResult.data || [];
+        renderNewProfileUnits(units.filter((unit) => unit.active));
         $("profilePasswordUser").innerHTML =
           '<option value="">Selecione o perfil</option>' +
           (profiles.data || [])
@@ -1162,7 +1447,7 @@
                       `<option value="${esc(unit.code)}" ${profile.default_unit_code === unit.code ? "selected" : ""} ${!unit.active ? "disabled" : ""}>${esc(unit.name)} (${esc(unit.code)})${unit.active ? "" : " — desativado"}</option>`,
                   )
                   .join("");
-              return `<div class="card"><b>${esc(profile.display_name)}</b><div class="small">Unidade padrão: <select data-user-unit="${profile.id}">${options}</select> Ativo: <select data-user-active="${profile.id}"><option value="true" ${profile.active ? "selected" : ""}>Sim</option><option value="false" ${!profile.active ? "selected" : ""}>Não</option></select></div><button data-save-user="${profile.id}">Salvar</button></div>`;
+              return `<div class="card"><b>${esc(profile.display_name)}</b><div class="small">${profile.is_admin ? "Administrador · acesso amplo" : "Perfil operacional"}</div><div class="small">Unidade padrão: <select data-user-unit="${profile.id}">${options}</select> Ativo: <select data-user-active="${profile.id}"><option value="true" ${profile.active ? "selected" : ""}>Sim</option><option value="false" ${!profile.active ? "selected" : ""}>Não</option></select></div><button data-save-user="${profile.id}">Salvar</button></div>`;
             })
             .join("") || "<p>Nenhum perfil.</p>";
         document.querySelectorAll("[data-save-user]").forEach(
@@ -1183,6 +1468,111 @@
               else loadUsers();
             }),
         );
+      }
+      function renderNewProfileUnits(units) {
+        const container = $("createPanelProfileUnits");
+        container.replaceChildren();
+        if (!units.length) {
+          container.textContent = "Não há unidades ativas para autorizar.";
+          return;
+        }
+        for (const unit of units) {
+          const label = document.createElement("label");
+          label.className = "small";
+          label.style.cssText = "display:flex;align-items:center;gap:8px;margin:6px 0";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.value = unit.code;
+          input.dataset.profileCreateUnit = "true";
+          input.style.width = "auto";
+          const text = document.createElement("span");
+          text.textContent = `${unit.name} (${unit.code})`;
+          label.append(input, text);
+          container.appendChild(label);
+        }
+      }
+      function toggleNewProfileAccessFields() {
+        const isAdmin = $("createPanelProfileRole").value === "admin";
+        $("confirmCreatePanelAdminField").classList.toggle("hidden", !isAdmin);
+        $("createPanelProfileUnitsField").classList.toggle("hidden", isAdmin);
+        if (isAdmin) $("confirmCreatePanelAdmin").checked = false;
+      }
+      function generatePanelProfilePassword() {
+        const bytes = crypto.getRandomValues(new Uint8Array(24));
+        const password = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+        $("createPanelProfilePassword").value = password;
+        $("createPanelProfilePasswordConfirm").value = password;
+        $("createPanelProfileStatus").textContent =
+          "Senha aleatória gerada. Copie e compartilhe somente em conversa privada.";
+      }
+      async function copyPanelProfilePassword() {
+        const password = $("createPanelProfilePassword").value;
+        if (!password) return status("createPanelProfileStatus", "Gere ou informe a senha primeiro.", true);
+        try {
+          await navigator.clipboard.writeText(password);
+          status("createPanelProfileStatus", "Senha copiada. Envie-a somente em conversa privada e limpe a área de transferência depois.");
+        } catch (error) {
+          status("createPanelProfileStatus", `Não foi possível copiar a senha: ${error.message || "permissão da área de transferência negada."}`, true);
+        }
+      }
+      async function createPanelProfile() {
+        const displayName = $("createPanelProfileName").value.trim();
+        const password = $("createPanelProfilePassword").value;
+        const passwordConfirm = $("createPanelProfilePasswordConfirm").value;
+        const isAdmin = $("createPanelProfileRole").value === "admin";
+        const confirmAdmin = $("confirmCreatePanelAdmin").checked;
+        const unitCodes = [...document.querySelectorAll("[data-profile-create-unit]:checked")]
+          .map((input) => input.value);
+        if (displayName.length < 2) {
+          return status("createPanelProfileStatus", "Informe um nome com pelo menos 2 caracteres.", true);
+        }
+        if (password.length < 12) {
+          return status("createPanelProfileStatus", "A senha inicial precisa ter pelo menos 12 caracteres.", true);
+        }
+        if (new TextEncoder().encode(password).length > 72) {
+          return status("createPanelProfileStatus", "A senha inicial pode ter no máximo 72 bytes.", true);
+        }
+        if (password !== passwordConfirm) {
+          return status("createPanelProfileStatus", "As senhas não conferem.", true);
+        }
+        if (isAdmin && !confirmAdmin) {
+          return status("createPanelProfileStatus", "Confirme explicitamente a concessão de acesso administrativo.", true);
+        }
+        if (!isAdmin && !unitCodes.length) {
+          return status("createPanelProfileStatus", "Selecione pelo menos uma unidade para este perfil.", true);
+        }
+        const button = $("createPanelProfileButton");
+        button.disabled = true;
+        status("createPanelProfileStatus", "Criando perfil...");
+        try {
+          const { error } = await db.rpc("opeixeiro_admin_create_panel_profile", {
+            p_display_name: displayName,
+            p_new_password: password,
+            p_is_admin: isAdmin,
+            p_unit_codes: isAdmin ? [] : unitCodes,
+            p_confirm_admin: confirmAdmin,
+          });
+          if (error) throw error;
+          $("createPanelProfileName").value = "";
+          $("createPanelProfilePassword").value = "";
+          $("createPanelProfilePasswordConfirm").value = "";
+          $("confirmCreatePanelAdmin").checked = false;
+          $("showPanelProfilePassword").checked = false;
+          $("createPanelProfilePassword").type = "password";
+          $("createPanelProfilePasswordConfirm").type = "password";
+          document.querySelectorAll("[data-profile-create-unit]").forEach((input) => {
+            input.checked = false;
+          });
+          await loadUsers();
+          status(
+            "createPanelProfileStatus",
+            `Perfil ${isAdmin ? "administrador" : "operacional"} criado. A tela não força troca no primeiro login; compartilhe a senha por canal privado e combine a rotação após o primeiro acesso.`,
+          );
+        } catch (error) {
+          status("createPanelProfileStatus", error.message || "Não foi possível criar o perfil.", true);
+        } finally {
+          button.disabled = false;
+        }
       }
       async function saveProfilePassword() {
         const id = $("profilePasswordUser").value,
@@ -2073,15 +2463,15 @@
         );
       }
       async function promptNew(kind) {
+        if (kind === "user") {
+          const form = $("createPanelProfileForm");
+          form.open = true;
+          form.scrollIntoView({ behavior: "smooth", block: "center" });
+          $("createPanelProfileName").focus();
+          return;
+        }
         let name = prompt("Nome:");
         if (!name?.trim()) return;
-        if (kind === "user") {
-          let { error } = await db
-            .from("opeixeiro_panel_users")
-            .insert({ display_name: name.trim(), active: true });
-          if (error) alert(error.message);
-          else loadUsers();
-        }
         if (kind === "driver") {
           let { error } = await db
             .from("opeixeiro_drivers")
@@ -2129,12 +2519,18 @@
       $("loginBtn").onclick = login;
       $("requestPasswordRecovery").onclick = requestPasswordRecovery;
       $("confirmPasswordRecovery").onclick = confirmPasswordRecovery;
+      $("adminResetSubmit").onclick = completeAdminPasswordReset;
+      $("adminResetCode").addEventListener("input", () => {
+        $("adminResetCode").value = $("adminResetCode").value.replace(/\D/g, "").slice(0, 6);
+      });
+      $("sendProfilePasswordReset").onclick = sendProfilePasswordReset;
       $("exitBtn").onclick = async () => {
         const { error } = await db.auth.signOut();
         if (error) return alert("Não foi possível encerrar a sessão: " + error.message);
         location.reload();
       };
       $("saveHours").onclick = saveHours;
+      $("saveRestaurantCount").onclick = saveRestaurantCount;
       $("reloadUsers").onclick = loadUsers;
       $("reloadDrivers").onclick = loadDrivers;
       $("reloadProducts").onclick = loadProducts;
@@ -2146,6 +2542,15 @@
       $("saveAnnualChecklistOwner").onclick = saveAnnualChecklistOwner;
       $("printReport").onclick = () => window.print();
       $("newUser").onclick = () => promptNew("user");
+      $("createPanelProfileRole").onchange = toggleNewProfileAccessFields;
+      $("generatePanelProfilePassword").onclick = generatePanelProfilePassword;
+      $("copyPanelProfilePassword").onclick = copyPanelProfilePassword;
+      $("createPanelProfileButton").onclick = createPanelProfile;
+      $("showPanelProfilePassword").onchange = (event) => {
+        const type = event.target.checked ? "text" : "password";
+        $("createPanelProfilePassword").type = type;
+        $("createPanelProfilePasswordConfirm").type = type;
+      };
       $("newDriver").onclick = () => promptNew("driver");
       $("newProduct").onclick = () => promptNew("product");
       $("manualDeliveryOrder").onchange = renderManualDeliveryItems;
