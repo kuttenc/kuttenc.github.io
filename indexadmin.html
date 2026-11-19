@@ -3637,6 +3637,37 @@
             );
             await loadOrdersContacts();
           } catch (error) {
+            if (
+              /duplicate key value violates unique constraint|opeixeiro_orders_group_contacts_phone_e164_key/i.test(
+                error.message || "",
+              )
+            ) {
+              await loadOrdersContacts();
+              const existingRow = [
+                ...document.querySelectorAll("#ordersContactsList .card"),
+              ].find(
+                (card) =>
+                  normalizedPhone(
+                    card.querySelector("[data-orders-phone]")?.value,
+                  ) === normalizedPhone(phone),
+              );
+              const existingProfile =
+                existingRow?.querySelector("[data-orders-profile]")
+                  ?.selectedOptions?.[0]?.textContent?.trim();
+              const existingProfileId =
+                existingRow?.querySelector("[data-orders-profile]")?.value;
+              status(
+                "newOrdersContactStatus",
+                existingRow
+                  ? existingProfileId === profileId
+                    ? "Esse telefone já aparece na lista abaixo e está ligado ao perfil escolhido. Não precisa cadastrar outra vez."
+                    : `Esse telefone já aparece na lista abaixo, ligado a ${existingProfile || "outro perfil"}. Nada foi alterado. Confira a linha antes de mudar o vínculo.`
+                  : "Esse telefone já está cadastrado. Atualizei a lista abaixo; procure o número pela opção “Vincular ao perfil” e não tente adicioná-lo novamente.",
+                !existingRow,
+              );
+              existingRow?.scrollIntoView({ behavior: "smooth", block: "center" });
+              return;
+            }
             status(
               "newOrdersContactStatus",
               error.message || "Não foi possível salvar o telefone e o perfil.",
