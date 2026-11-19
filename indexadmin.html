@@ -744,12 +744,13 @@
           <div id="ordersContactsContent" class="hidden">
             <div id="ordersContactsGroup" class="card"></div>
             <div class="card">
-              <h3>Adicionar telefone e ligar ao perfil</h3>
+              <h3>Cadastrar ou ligar telefone a um perfil</h3>
               <p class="small">
-                Use quando o telefone ainda não aparece na lista abaixo.
-                Escolha o perfil correto: esse vínculo é usado para enviar a
-                recuperação de senha ao WhatsApp particular. Confirme o número
-                com a pessoa antes de salvar.
+                Informe o WhatsApp particular e escolha o perfil da pessoa.
+                Esse vínculo permite enviar a recuperação de senha. Se o
+                número já estiver cadastrado, o painel vai localizar o contato
+                existente em vez de criar uma cópia. Confirme o número com a
+                pessoa antes de salvar.
               </p>
               <div class="grid">
                 <div class="field">
@@ -3541,6 +3542,7 @@
           logisticsContacts = data?.logistics_contacts || [],
           profiles = data?.profiles || [],
           units = data?.units || [],
+          normalizedPhone = (value) => String(value || "").replace(/\D/g, ""),
           group = data?.group || {},
           unitName = (id) => {
             const unit = units.find((item) => item.id === id);
@@ -3580,19 +3582,48 @@
             status("newOrdersContactStatus", "Escolha o perfil dessa pessoa.", true);
             return;
           }
+          const existingContact = contacts.find(
+            (contact) =>
+              normalizedPhone(contact.phone_e164) === normalizedPhone(phone),
+          );
+          if (existingContact?.panel_user_id === profileId) {
+            status(
+              "newOrdersContactStatus",
+              "Esse telefone já está cadastrado e ligado a esse perfil. Não precisa salvar de novo.",
+            );
+            return;
+          }
+          if (
+            existingContact?.panel_user_id &&
+            existingContact.panel_user_id !== profileId
+          ) {
+            status(
+              "newOrdersContactStatus",
+              "Esse telefone já está ligado a outro perfil. Nada foi alterado; confira o contato existente na lista antes de mudar o vínculo.",
+              true,
+            );
+            return;
+          }
           try {
             button.disabled = true;
-            status("newOrdersContactStatus", "Salvando telefone e vínculo...");
+            status(
+              "newOrdersContactStatus",
+              existingContact
+                ? "Localizei esse telefone. Atualizando o vínculo existente..."
+                : "Salvando telefone e vínculo...",
+            );
             const { error } = await db.rpc(
               "opeixeiro_orders_group_save_contact",
               {
                 p_password: ordersGroupAdminPassword,
-                p_contact_id: null,
+                p_contact_id: existingContact?.id || null,
                 p_phone_e164: phone,
                 p_display_name: name,
                 p_panel_user_id: profileId,
-                p_unit_id: null,
-                p_is_group_member: $("newOrdersContactIsGroupMember").checked,
+                p_unit_id: existingContact?.unit_id || null,
+                p_is_group_member:
+                  existingContact?.is_group_member ??
+                  $("newOrdersContactIsGroupMember").checked,
               },
             );
             if (error) throw error;
