@@ -25,6 +25,18 @@
           return;
         }
 
+        // Páginas de estabelecimentos são públicas e pertencem à raiz do GitHub Pages.
+        // Não encaminhar esses caminhos para o Urtador.
+        if (/^\/estabelecimentos(\/|$)/i.test(path)) {
+          document.title = "Estabelecimento não encontrado";
+          document.body.innerHTML =
+            '<main style="min-height:70vh;display:grid;place-items:center;font:16px system-ui;text-align:center">' +
+            '<div><h1>Estabelecimento não encontrado</h1>' +
+            '<p>Confira o endereço ou volte ao início.</p>' +
+            '<p><a href="/">Início</a></p></div></main>';
+          return;
+        }
+
         // O Urtador canônico fica em /urtador/. Para lá só vai o que ainda não está nele: sem essa
         // trava, um /urtador/<qualquer coisa> viraria /urtador/urtador/<qualquer coisa> em loop.
         if (/^\/urtador(\/|$)/i.test(path)) {
