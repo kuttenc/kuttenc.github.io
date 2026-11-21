@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ws corte barber — agende seu horário</title>
+<meta name="description" content="Agende horário em Ws corte barber.">
+<style>
+:root{color-scheme:dark;--fundo:#101820;--card:#18232d;--linha:#2a3a47;--texto:#edf3f6;--apago:#9eafb9;--ouro:#efbd72;--botao:#c66c48;--verde:#327c67;--sombra:0 18px 48px #07101866}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -18%,#284254 0,transparent 58%),var(--fundo);color:var(--texto);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.cabeca{padding:42px 18px 30px;background:linear-gradient(150deg,#1d303d,#15212a 72%);border-bottom:1px solid var(--linha);text-align:center}
+.cabeca h1{max-width:900px;margin:0 auto 8px;font-size:clamp(25px,6vw,42px);line-height:1.15;letter-spacing:.2px;color:var(--ouro)}
+.cabeca p{margin:0 auto;color:var(--apago);font-size:15px}
+.acoes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.acoes a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:12px;background:#1a2934;border:1px solid var(--linha);color:var(--texto);text-decoration:none;font-size:14px;font-weight:650;transition:transform .15s,border-color .15s}
+.acoes a:hover{transform:translateY(-1px);border-color:var(--ouro)}
+.acoes a.zap{background:var(--verde);border-color:var(--verde);color:#fff}
+main{max-width:960px;margin:0 auto;padding:4px 18px 64px}
+section{margin-top:20px;background:linear-gradient(145deg,#1b2832,#17232c);border:1px solid var(--linha);border-radius:18px;padding:22px;box-shadow:var(--sombra)}
+h2{margin:0 0 14px;font-size:20px;color:var(--ouro);letter-spacing:.1px}
+.item{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #ffffff12}
+.item:last-child{border-bottom:0}
+.item b{font-weight:600}
+.item span{color:var(--apago);font-size:13px;white-space:nowrap}
+.mini{color:var(--apago);font-size:13px;margin:6px 0 0}
+.aviso-publico{white-space:pre-line}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 12px;border:1px solid var(--linha);border-radius:999px;font-size:14px;background:#1b2b35}
+grade{display:grid}
+.dias{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.hora{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--linha);font-size:15px}
+.hora:last-child{border-bottom:0}
+.hora b{color:var(--apago);font-weight:500;text-transform:capitalize}
+.opcoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.op{padding:10px 14px;border:1px solid var(--linha);border-radius:12px;background:#1a2933;color:var(--texto);font:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.op:hover{border-color:#9c8060}
+.op.ativo{border-color:var(--ouro);background:#3a3225;color:var(--ouro);font-weight:700}
+.op:disabled{opacity:.35;cursor:not-allowed}
+.pessoa{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--linha);border-radius:14px;background:#1a2933;cursor:pointer;color:var(--texto);font:inherit}
+.pessoa.ativo{border-color:var(--ouro);background:#3a3225}
+.pessoa img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#0e0d0c}
+.pessoa div{text-align:left}
+.pessoa small{display:block;color:var(--apago);font-size:12px;text-transform:capitalize}
+.galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:180px;object-fit:cover;border-radius:14px;display:block;background:#0e0d0c}
+.galeria figcaption{font-size:12px;color:var(--apago);margin-top:5px}
+.rotulo{display:block;font-size:12px;color:var(--apago);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+input,select{width:100%;min-height:46px;padding:11px 13px;border-radius:12px;border:1px solid var(--linha);background:#111c24;color:var(--texto);font:inherit}
+input:focus,select:focus{outline:2px solid #efbd7280;border-color:var(--ouro)}
+.gravar{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:var(--botao);color:#fff;font-size:16px;font-weight:750;cursor:pointer;transition:filter .15s,transform .15s}
+.gravar:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px)}
+.gravar.secundario{background:#263b48;border:1px solid #466072}
+.codigo{max-width:250px;letter-spacing:.35em;font-size:22px;font-weight:750;text-align:center}
+.gravar:disabled{opacity:.45;cursor:not-allowed}
+.aviso{margin-top:12px;padding:12px 14px;border-radius:12px;font-size:14px;display:none}
+.aviso.ok{display:block;background:#17342d;border:1px solid #327c67}
+.aviso.erro{display:block;background:#3a2421;border:1px solid #85503f}
+.pés{margin-top:26px;text-align:center;color:var(--apago);font-size:12px}
+.pés a{color:var(--apago)}
+@media (max-width:560px){.cabeca{padding:32px 16px 24px}main{padding:0 12px 44px}section{margin-top:14px;padding:17px;border-radius:15px}.acoes a{flex:1 1 130px;text-align:center}.item{align-items:flex-start}.galeria{grid-template-columns:repeat(auto-fill,minmax(125px,1fr))}}
+</style>
+</head>
+<body>
+<header class="cabeca">
+  <h1>Ws corte barber</h1>
+  <p>Endereço e ponto de referência no WhatsApp</p>
+  <div class="acoes">
+    <a href="#agendar">Agendar</a><a href="#cancelar">Cancelar horário</a>
+    <a class="zap" href="https://wa.me/5512988440509" rel="noopener">Chamar no WhatsApp</a>
+    
+  </div>
+</header>
+<main>
+  <section id="agendar">
+    <h2>Agendar horário</h2>
+    <span class="rotulo">Serviço</span>
+    <div class="opcoes" id="servicos-escolha"><p class="mini">Cadastre os serviços pelo WhatsApp e a página se atualiza sozinha.</p></div>
+    <div id="pessoas-campo" style="display:none">
+      <span class="rotulo">Quem vai atender</span>
+      <div class="opcoes" id="pessoas"></div>
+    </div>
+    <span class="rotulo">Dia</span>
+    <div class="opcoes" id="dias"></div>
+    <span class="rotulo">Horário livre</span>
+    <div class="opcoes" id="horas"></div>
+    <span class="rotulo">Seus dados</span>
+    <div class="opcoes" style="flex-direction:column;align-items:stretch">
+      <input id="nome" type="text" maxlength="60" placeholder="Seu nome" autocomplete="name">
+      <input id="telefone" type="tel" inputmode="numeric" maxlength="17" placeholder="(11) 99999-9999" autocomplete="tel">
+    </div>
+    <button class="gravar" id="gravar" type="button" disabled>Confirmar horário</button>
+    <div class="aviso" id="aviso"></div>
+    <p class="mini">O horário cai direto na agenda do salão e ele confirma com você.</p>
+  </section>
+
+  <section id="cancelar">
+    <h2>Cancelar agendamento</h2>
+    <p class="mini">Use o mesmo telefone informado ao marcar. Enviaremos um código de confirmação pelo WhatsApp desse número.</p>
+    <div class="opcoes" style="align-items:flex-end">
+      <label style="flex:1;min-width:180px"><span class="rotulo">Telefone do agendamento</span>
+        <input id="cancelar-telefone" type="tel" inputmode="numeric" maxlength="17" placeholder="(11) 99999-9999" autocomplete="tel">
+      </label>
+      <label style="flex:1;min-width:150px"><span class="rotulo">Data</span>
+        <input id="cancelar-dia" type="date">
+      </label>
+      <label style="flex:1;min-width:130px"><span class="rotulo">Horário</span>
+        <input id="cancelar-hora" type="time">
+      </label>
+    </div>
+    <button class="gravar secundario" id="cancelar-solicitar" type="button">Enviar código pelo WhatsApp</button>
+    <div class="aviso" id="cancelar-aviso" aria-live="polite"></div>
+    <div id="cancelar-codigo-passo" hidden>
+      <label><span class="rotulo">Código de seis números</span>
+        <input class="codigo" id="cancelar-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000">
+      </label>
+      <p class="mini">O código expira em 10 minutos. Após a confirmação, o horário será cancelado.</p>
+      <button class="gravar" id="cancelar-confirmar" type="button">Confirmar cancelamento</button>
+    </div>
+  </section>
+
+  
+  
+  <section><h2>Horários de atendimento</h2><div class="hora"><b>domingo</b><span>fechado</span></div>
+<div class="hora"><b>segunda</b><span>fechado</span></div>
+<div class="hora"><b>terça</b><span>fechado</span></div>
+<div class="hora"><b>quarta</b><span>fechado</span></div>
+<div class="hora"><b>quinta</b><span>fechado</span></div>
+<div class="hora"><b>sexta</b><span>fechado</span></div>
+<div class="hora"><b>sábado</b><span>fechado</span></div></section>
+  <section><h2>Formas de pagamento</h2><p class="mini">Pergunte no balcão as formas aceitas.</p></section>
+  
+  
+  
+
+  <p class="pés">Ws corte barber · atualizado em 21/11/2026 às 19:43</p>
+</main>
+<script id="dados" type="application/json">{"telefone":"5512988440509","nome":"Ws corte barber","slug":"wscortebarber","url":"https://kuttenc.github.io/estabelecimentos/wscortebarber","endereco":"","cidade":"","uf":"","cep":"","telefone_publico":"5512988440509","mostra_barbeiro":true,"aceita_agendamento":true,"aviso_publico":"","servicos":[],"produtos":[],"horarios":[],"pagamentos":[],"funcionarios":[],"fotos":[],"atualizado_em":"21/11/2026 às 19:43"}</script>
+<script>
+(function () {
+  var d = JSON.parse(document.getElementById('dados').textContent);
+  var api = "https://ggufcvrwctieacvbbwim.supabase.co/functions/v1/peixeiro";
+  var dia = ["2026-11-22","2026-11-23","2026-11-24","2026-11-25","2026-11-26","2026-11-27","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04","2026-12-05"];
+  var semana = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  var aberto = {};
+  (d.horarios || []).forEach(function (h) { aberto[h.dia] = h; });
+  var escolha = { servico: null, pessoa: '', hora: '' };
+
+  function el(id) { return document.getElementById(id); }
+  function limpar(caixa) { while (caixa.firstChild) caixa.removeChild(caixa.firstChild); }
+  function botao(texto, ativo) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'op' + (ativo ? ' ativo' : ''); b.textContent = texto; return b;
+  }
+  function aviso(classe, texto) {
+    var a = el('aviso'); a.className = 'aviso ' + classe; a.textContent = texto;
+  }
+  function claro(texto) {
+    if (!texto) return 'a combinar';
+    var n = Number(texto);
+    if (!isFinite(n)) return 'a combinar';
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  var caixaServico = el('servicos-escolha');
+  (d.servicos || []).forEach(function (s, i) {
+    var b = botao(s.nome + ' · ' + claro(s.preco), i === 0);
+    if (i === 0) escolha.servico = s;
+    b.onclick = function () {
+      escolha.servico = s; escolha.hora = '';
+      var todos = caixaServico.getElementsByClassName('op');
+      for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+      b.className = 'op ativo';
+      montarDias();
+    };
+    caixaServico.appendChild(b);
+  });
+
+  var caixaPessoa = el('pessoas');
+  if (d.mostra_barbeiro && (d.funcionarios || []).length) {
+    el('pessoas-campo').style.display = 'block';
+    var todos = botao('qualquer um', true);
+    todos.onclick = function () {
+      escolha.pessoa = ''; limpar(caixaPessoa); caixaPessoa.appendChild(todos); todos.className = 'op ativo';
+      desenharPessoas(); montarHoras();
+    };
+    caixaPessoa.appendChild(todos);
+    desenharPessoas();
+  }
+  function desenharPessoas() {
+    (d.funcionarios || []).forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'pessoa';
+      if (f.foto) {
+        var img = document.createElement('img');
+        img.src = f.foto; img.alt = f.nome; img.loading = 'lazy'; b.appendChild(img);
+      }
+      var txt = document.createElement('div');
+      txt.textContent = f.nome || 'barbeiro';
+      var cargo = document.createElement('small');
+      cargo.textContent = f.cargo || 'barbeiro';
+      txt.appendChild(cargo);
+      b.appendChild(txt);
+      b.onclick = function () {
+        var lista = caixaPessoa.children;
+        for (var k = 0; k < lista.length; k++) lista[k].className = lista[k].className.indexOf('pessoa') >= 0 ? 'pessoa' : 'op';
+        b.className = 'pessoa ativo';
+        escolha.pessoa = f.id; escolha.hora = '';
+        montarHoras();
+      };
+      caixaPessoa.appendChild(b);
+    });
+  }
+
+  var caixaDias = el('dias');
+  var escolhido = null;
+  function montarDias() {
+    limpar(caixaDias); escolhido = null;
+    var agendaPorProfissional = d.mostra_barbeiro && (d.funcionarios || []).length > 0;
+    if (!(d.servicos || []).length) {
+      var avisoServico = document.createElement('p'); avisoServico.className = 'mini';
+      avisoServico.textContent = 'A agenda estará disponível assim que o salão cadastrar serviços.';
+      caixaDias.appendChild(avisoServico);
+      limpar(caixaHoras);
+      el('gravar').disabled = true;
+      return;
+    }
+    dia.forEach(function (iso, i) {
+      var partes = iso.split('-');
+      var data = new Date(Date.UTC(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])));
+      var n = data.getUTCDay();
+      if (!aberto[n] && !agendaPorProfissional) return;
+      var rotulo = i === 0 ? 'hoje' : (i === 1 ? 'amanhã' : semana[n]);
+      var texto = rotulo + ' ' + partes[2] + '/' + partes[1];
+      var b = botao(texto, i === 0);
+      if (i === 0) { escolhido = iso; b.className = 'op ativo'; }
+      b.onclick = function () {
+        var todos = caixaDias.getElementsByClassName('op');
+        for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+        b.className = 'op ativo'; escolhido = iso; escolha.hora = ''; montarHoras();
+      };
+      caixaDias.appendChild(b);
+    });
+    if (!caixaDias.children.length) {
+      var p = document.createElement('p'); p.className = 'mini';
+      p.textContent = 'Este salão ainda não publicou os dias de atendimento.'; caixaDias.appendChild(p);
+    }
+    montarHoras();
+  }
+
+  var caixaHoras = el('horas');
+  function montarHoras() {
+    limpar(caixaHoras);
+    var duracao = escolha.servico ? escolha.servico.duracao_min : 30;
+    if (!escolhido) return;
+    var p = document.createElement('p'); p.className = 'mini';
+    p.textContent = 'Procurando horários livres...'; caixaHoras.appendChild(p);
+    var url = api + '?action=estab_vagas&slug=' + encodeURIComponent(d.slug) + '&dia=' + escolhido +
+      '&duracao=' + duracao + '&profissional=' + encodeURIComponent(escolha.pessoa);
+    if (!api) { p.textContent = 'Agenda indisponível agora. Chame no WhatsApp.'; return; }
+    fetch(url).then(function (r) { return r.json(); }).then(function (s) {
+      limpar(caixaHoras);
+      if (s.fechado) { var q = document.createElement('p'); q.className = 'mini';
+        q.textContent = 'Neste dia o salão não atende.'; caixaHoras.appendChild(q); return; }
+      if (!s.vagas || !s.vagas.length) { var w = document.createElement('p'); w.className = 'mini';
+        w.textContent = 'Sem vaga livre neste dia. Tente o próximo.'; caixaHoras.appendChild(w); return; }
+      s.vagas.forEach(function (h) {
+        var b = botao(h, h === escolha.hora);
+        b.onclick = function () {
+          var todos = caixaHoras.getElementsByClassName('op');
+          for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+          b.className = 'op ativo'; escolha.hora = h; el('gravar').disabled = false;
+        };
+        caixaHoras.appendChild(b);
+      });
+    }).catch(function () {
+      limpar(caixaHoras);
+      var e = document.createElement('p'); e.className = 'mini';
+      e.textContent = 'A agenda não respondeu agora. Tente de novo em instantes.'; caixaHoras.appendChild(e);
+    });
+  }
+
+  var telefone = el('telefone');
+  telefone.addEventListener('input', function () {
+    var n = telefone.value.replace(/D/g, '').slice(0, 11);
+    if (n.length > 10) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
+    else if (n.length > 6) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
+    else if (n.length > 2) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2);
+    else telefone.value = n;
+  });
+
+  el('gravar').onclick = function () {
+    if (!escolha.servico || !escolhido || !escolha.hora) return;
+    var nome = el('nome').value.trim();
+    var fone = telefone.value.replace(/D/g, '');
+    if (nome.length < 2) { aviso('erro', 'Escreva o seu nome.'); return; }
+    if (fone.length < 10) { aviso('erro', 'O telefone precisa ter o DDD.'); return; }
+    if (!api) { aviso('erro', 'A agenda não está ligada neste endereço.'); return; }
+    el('gravar').disabled = true;
+    fetch(api + '?action=estab_marcar', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        slug: d.slug, dia: escolhido, hora: escolha.hora, servico: escolha.servico.nome,
+        duracao: escolha.servico.duracao_min, profissional: escolha.pessoa, nome: nome, telefone: fone
+      })
+    }).then(function (r) { return r.json(); }).then(function (s) {
+      el('gravar').disabled = false;
+      if (s.ok) {
+        aviso('ok', (s.texto || 'Horário anotado!') + ' O salão recebe o recado na hora.');
+        escolha.hora = ''; montarHoras();
+      } else {
+        aviso('erro', s.erro === 'ocupado' ? 'Alguém pegou este horário agora. Escolha outro.' :
+          (s.erro === 'sem_horario' ? 'Este dia fechou. Escolha outro.' : 'Não consegui anotar. Chame no WhatsApp.'));
+        montarHoras();
+      }
+    }).catch(function () { el('gravar').disabled = false; aviso('erro', 'Sem resposta da agenda. Tente de novo.'); });
+  };
+
+  var cancelarTelefone = el('cancelar-telefone');
+  cancelarTelefone.addEventListener('input', function () {
+    var n = cancelarTelefone.value.replace(/D/g, '').slice(0, 11);
+    if (n.length > 6) cancelarTelefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
+    else if (n.length > 2) cancelarTelefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2);
+    else cancelarTelefone.value = n;
+  });
+  el('cancelar-codigo').addEventListener('input', function () {
+    el('cancelar-codigo').value = el('cancelar-codigo').value.replace(/D/g, '').slice(0, 6);
+  });
+  function enviarAcaoCancelamento(acao, dados) {
+    return fetch(api, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action: acao, slug: d.slug }, dados))
+    }).then(function (r) {
+      return r.json().then(function (s) {
+        if (!r.ok) throw new Error(s.erro || 'indisponivel');
+        return s;
+      });
+    });
+  }
+  function dadosCancelamento() {
+    return {
+      telefone: cancelarTelefone.value.replace(/D/g, ''),
+      dia: el('cancelar-dia').value,
+      hora: el('cancelar-hora').value
+    };
+  }
+  el('cancelar-solicitar').onclick = function () {
+    var dados = dadosCancelamento();
+    if (dados.telefone.length < 10 || !dados.dia || !dados.hora) {
+      el('cancelar-aviso').className = 'aviso erro';
+      el('cancelar-aviso').textContent = 'Preencha o telefone usado no agendamento, a data e o horário.';
+      return;
+    }
+    if (!api) {
+      el('cancelar-aviso').className = 'aviso erro';
+      el('cancelar-aviso').textContent = 'O cancelamento está indisponível agora. Tente novamente.';
+      return;
+    }
+    el('cancelar-solicitar').disabled = true;
+    el('cancelar-aviso').className = 'aviso';
+    enviarAcaoCancelamento('estab_cancelar_solicitar', dados).then(function (s) {
+      el('cancelar-aviso').className = 'aviso ok';
+      el('cancelar-aviso').textContent = s.texto || 'Se encontramos seu horário, enviamos um código pelo WhatsApp.';
+      el('cancelar-codigo-passo').hidden = false;
+      el('cancelar-codigo').focus();
+    }).catch(function () {
+      el('cancelar-aviso').className = 'aviso erro';
+      el('cancelar-aviso').textContent = 'Não foi possível solicitar agora. Tente novamente em instantes.';
+    }).finally(function () { el('cancelar-solicitar').disabled = false; });
+  };
+  el('cancelar-confirmar').onclick = function () {
+    var dados = dadosCancelamento();
+    dados.codigo = el('cancelar-codigo').value;
+    if (dados.codigo.length !== 6) {
+      el('cancelar-aviso').className = 'aviso erro';
+      el('cancelar-aviso').textContent = 'Digite o código de seis números recebido no WhatsApp.';
+      return;
+    }
+    el('cancelar-confirmar').disabled = true;
+    enviarAcaoCancelamento('estab_cancelar_confirmar', dados).then(function (s) {
+      el('cancelar-aviso').className = 'aviso ok';
+      el('cancelar-aviso').textContent = s.texto || 'Cancelamento confirmado.';
+      el('cancelar-codigo-passo').hidden = true;
+      el('cancelar-codigo').value = '';
+    }).catch(function (e) {
+      el('cancelar-aviso').className = 'aviso erro';
+      el('cancelar-aviso').textContent = e.message === 'devagar'
+        ? 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.'
+        : 'Código não validado. Confira os dados, solicite um novo código e tente novamente.';
+    }).finally(function () { el('cancelar-confirmar').disabled = false; });
+  };
+
+  montarDias();
+})();
+</script>
+</body>
+</html>
