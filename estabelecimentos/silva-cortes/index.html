@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silva Cortes — agende seu horário</title>
+<meta name="description" content="Agende horário em Silva Cortes (Rua Irma Sao Francisco, 725 — Caputera/SP).">
+<style>
+:root{--fundo:#12100e;--card:#1b1815;--linha:#2c2723;--texto:#f3ece0;--apago:#a89b88;--ouro:#d8b26e;--botao:#c8442f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.cabeca{padding:26px 18px 22px;background:linear-gradient(160deg,#1b1815,#12100e 70%);border-bottom:1px solid var(--linha);text-align:center}
+.cabeca h1{margin:0 0 6px;font-size:clamp(23px,6vw,38px);letter-spacing:.5px;text-transform:uppercase;color:var(--ouro)}
+.cabeca p{margin:0;color:var(--apago);font-size:14px}
+.acoes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.acoes a{display:inline-block;padding:11px 16px;border-radius:10px;background:var(--card);border:1px solid var(--linha);color:var(--texto);text-decoration:none;font-size:15px}
+.acoes a.zap{background:var(--botao);border-color:var(--botao);color:#fff;font-weight:600}
+main{max-width:940px;margin:0 auto;padding:0 16px 60px}
+section{margin-top:26px;background:var(--card);border:1px solid var(--linha);border-radius:14px;padding:18px}
+h2{margin:0 0 14px;font-size:19px;color:var(--ouro);text-transform:uppercase;letter-spacing:1px}
+.item{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px dashed var(--linha)}
+.item:last-child{border-bottom:0}
+.item b{font-weight:600}
+.item span{color:var(--apago);font-size:13px;white-space:nowrap}
+.mini{color:var(--apago);font-size:13px;margin:6px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 12px;border:1px solid var(--linha);border-radius:999px;font-size:14px;background:#151311}
+grade{display:grid}
+.dias{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.hora{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--linha);font-size:15px}
+.hora:last-child{border-bottom:0}
+.hora b{color:var(--apago);font-weight:500;text-transform:capitalize}
+.opcoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.op{padding:10px 13px;border:1px solid var(--linha);border-radius:10px;background:#151311;color:var(--texto);font:inherit;cursor:pointer}
+.op.ativo{border-color:var(--ouro);background:#241f18;color:var(--ouro);font-weight:600}
+.op:disabled{opacity:.35;cursor:not-allowed}
+.pessoa{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--linha);border-radius:12px;background:#151311;cursor:pointer;color:var(--texto);font:inherit}
+.pessoa.ativo{border-color:var(--ouro);background:#241f18}
+.pessoa img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#0e0d0c}
+.pessoa div{text-align:left}
+.pessoa small{display:block;color:var(--apago);font-size:12px;text-transform:capitalize}
+.galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.galeria figure{margin:0}
+.galeria img{width:100%;height:140px;object-fit:cover;border-radius:10px;display:block;background:#0e0d0c}
+.galeria figcaption{font-size:12px;color:var(--apago);margin-top:5px}
+.rotulo{display:block;font-size:13px;color:var(--apago);margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--linha);background:#151311;color:var(--texto);font:inherit}
+.gravar{width:100%;margin-top:16px;padding:14px;border:0;border-radius:11px;background:var(--botao);color:#fff;font-size:17px;font-weight:700;cursor:pointer}
+.gravar:disabled{opacity:.45;cursor:not-allowed}
+.aviso{margin-top:12px;padding:12px;border-radius:10px;font-size:15px;display:none}
+.aviso.ok{display:block;background:#162a1c;border:1px solid #2b5539}
+.aviso.erro{display:block;background:#2c1512;border:1px solid #55272b}
+.pés{margin-top:22px;text-align:center;color:var(--apago);font-size:12px}
+.pés a{color:var(--apago)}
+@media (max-width:560px){section{padding:15px}.acoes a{flex:1 1 auto;text-align:center}}
+</style>
+</head>
+<body>
+<header class="cabeca">
+  <h1>Silva Cortes</h1>
+  <p>Rua Irma Sao Francisco, 725 — Caputera/SP</p>
+  <div class="acoes">
+    <a class="zap" href="https://wa.me/5512991470982" rel="noopener">Chamar no WhatsApp</a>
+    <a href="https://www.google.com/maps/search/?api=1&amp;query=Rua%20Irma%20Sao%20Francisco%2C%20725%2C%20Caputera%2C%20SP" rel="noopener nofollow">Como chegar</a>
+  </div>
+</header>
+<main>
+  <section id="agendar">
+    <h2>Agendar horário</h2>
+    <span class="rotulo">Serviço</span>
+    <div class="opcoes" id="servicos-escolha"></div>
+    <div id="pessoas-campo" style="display:none">
+      <span class="rotulo">Quem vai atender</span>
+      <div class="opcoes" id="pessoas"></div>
+    </div>
+    <span class="rotulo">Dia</span>
+    <div class="opcoes" id="dias"></div>
+    <span class="rotulo">Horário livre</span>
+    <div class="opcoes" id="horas"></div>
+    <span class="rotulo">Seus dados</span>
+    <div class="opcoes" style="flex-direction:column;align-items:stretch">
+      <input id="nome" type="text" maxlength="60" placeholder="Seu nome" autocomplete="name">
+      <input id="telefone" type="tel" inputmode="numeric" maxlength="17" placeholder="(11) 99999-9999" autocomplete="tel">
+    </div>
+    <button class="gravar" id="gravar" type="button" disabled>Confirmar horário</button>
+    <div class="aviso" id="aviso"></div>
+    <p class="mini">O horário cai direto na agenda do salão e ele confirma com você.</p>
+  </section>
+
+  <section><h2>Serviços</h2><div class="item"><div><b>Barba</b></div><span>R$ 25,00 · 30 min</span></div>
+<div class="item"><div><b>Barba na maquina</b></div><span>R$ 10,00 · 20 min</span></div>
+<div class="item"><div><b>Botox capilar</b></div><span>R$ 100,00 · 60 min</span></div>
+<div class="item"><div><b>Corte</b></div><span>R$ 30,00 · 30 min</span></div>
+<div class="item"><div><b>Depilacao nasal</b></div><span>R$ 25,00 · 15 min</span></div>
+<div class="item"><div><b>Luzes</b></div><span>R$ 100,00 · 120 min</span></div>
+<div class="item"><div><b>Pigmentacao</b></div><span>R$ 20,00 · 30 min</span></div>
+<div class="item"><div><b>Relaxamento</b></div><span>R$ 100,00 · 60 min</span></div></section>
+  <section><h2>Produtos</h2><div class="item"><b>Gel</b><span>R$ 15,00</span></div>
+<div class="item"><b>Pomada</b><span>R$ 30,00</span></div></section>
+  <section><h2>Horários de atendimento</h2><div class="hora"><b>domingo</b><span>fechado</span></div>
+<div class="hora"><b>segunda</b><span>09:00 às 21:00</span></div>
+<div class="hora"><b>terça</b><span>09:00 às 21:00</span></div>
+<div class="hora"><b>quarta</b><span>09:00 às 21:00</span></div>
+<div class="hora"><b>quinta</b><span>09:00 às 21:00</span></div>
+<div class="hora"><b>sexta</b><span>09:00 às 21:00</span></div>
+<div class="hora"><b>sábado</b><span>09:00 às 21:00</span></div></section>
+  <section><h2>Formas de pagamento</h2><p class="mini">Pergunte no balcão as formas aceitas.</p></section>
+  <section><h2>Quem atende aqui</h2><div class="opcoes" id="equipe-lista"><div class="item"><div><b>Tiago</b></div><span>barbeiro</span></div></div></section>
+  
+
+  <p class="pés">Silva Cortes · atualizado em 21/11/2026 às 01:06</p>
+</main>
+<script id="dados" type="application/json">{"telefone":"5512991470982","nome":"Silva Cortes","slug":"silva-cortes","url":"https://kuttenc.github.io/estabelecimentos/silva-cortes","endereco":"Rua Irma Sao Francisco, 725","cidade":"Caputera","uf":"SP","cep":"","telefone_publico":"5512991470982","mostra_barbeiro":true,"servicos":[{"nome":"Barba","preco":25,"duracao_min":30,"descricao":""},{"nome":"Barba na maquina","preco":10,"duracao_min":20,"descricao":""},{"nome":"Botox capilar","preco":100,"duracao_min":60,"descricao":""},{"nome":"Corte","preco":30,"duracao_min":30,"descricao":""},{"nome":"Depilacao nasal","preco":25,"duracao_min":15,"descricao":""},{"nome":"Luzes","preco":100,"duracao_min":120,"descricao":""},{"nome":"Pigmentacao","preco":20,"duracao_min":30,"descricao":""},{"nome":"Relaxamento","preco":100,"duracao_min":60,"descricao":""}],"produtos":[{"nome":"Gel","preco":15},{"nome":"Pomada","preco":30}],"horarios":[{"dia":1,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"},{"dia":2,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"},{"dia":3,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"},{"dia":4,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"},{"dia":5,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"},{"dia":6,"abre":"09:00","fecha":"21:00","intervalo":30,"primeiro":"09:00"}],"pagamentos":[],"funcionarios":[{"telefone":"5512991470982","nome":"Tiago","cargo":"barbeiro","foto":""}],"fotos":[],"atualizado_em":"21/11/2026 às 01:06"}</script>
+<script>
+(function () {
+  var d = JSON.parse(document.getElementById('dados').textContent);
+  var api = "https://ggufcvrwctieacvbbwim.supabase.co/functions/v1/peixeiro";
+  var dia = ["2026-11-21","2026-11-22","2026-11-23","2026-11-24","2026-11-25","2026-11-26","2026-11-27","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04"];
+  var semana = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+  var aberto = {};
+  (d.horarios || []).forEach(function (h) { aberto[h.dia] = h; });
+  var escolha = { servico: null, pessoa: '', hora: '' };
+
+  function el(id) { return document.getElementById(id); }
+  function limpar(caixa) { while (caixa.firstChild) caixa.removeChild(caixa.firstChild); }
+  function botao(texto, ativo) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'op' + (ativo ? ' ativo' : ''); b.textContent = texto; return b;
+  }
+  function aviso(classe, texto) {
+    var a = el('aviso'); a.className = 'aviso ' + classe; a.textContent = texto;
+  }
+  function claro(texto) {
+    if (!texto) return 'a combinar';
+    var n = Number(texto);
+    if (!isFinite(n)) return 'a combinar';
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  var caixaServico = el('servicos-escolha');
+  (d.servicos || []).forEach(function (s, i) {
+    var b = botao(s.nome + ' · ' + claro(s.preco), i === 0);
+    if (i === 0) escolha.servico = s;
+    b.onclick = function () {
+      escolha.servico = s; escolha.hora = '';
+      var todos = caixaServico.getElementsByClassName('op');
+      for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+      b.className = 'op ativo';
+      montarDias();
+    };
+    caixaServico.appendChild(b);
+  });
+
+  var caixaPessoa = el('pessoas');
+  if (d.mostra_barbeiro && (d.funcionarios || []).length) {
+    el('pessoas-campo').style.display = 'block';
+    var todos = botao('qualquer um', true);
+    todos.onclick = function () {
+      escolha.pessoa = ''; limpar(caixaPessoa); caixaPessoa.appendChild(todos); todos.className = 'op ativo';
+      desenharPessoas(); montarHoras();
+    };
+    caixaPessoa.appendChild(todos);
+    desenharPessoas();
+  }
+  function desenharPessoas() {
+    (d.funcionarios || []).forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'pessoa';
+      if (f.foto) {
+        var img = document.createElement('img');
+        img.src = f.foto; img.alt = f.nome; img.loading = 'lazy'; b.appendChild(img);
+      }
+      var txt = document.createElement('div');
+      txt.textContent = f.nome || 'barbeiro';
+      var cargo = document.createElement('small');
+      cargo.textContent = f.cargo || 'barbeiro';
+      txt.appendChild(cargo);
+      b.appendChild(txt);
+      b.onclick = function () {
+        var lista = caixaPessoa.children;
+        for (var k = 0; k < lista.length; k++) lista[k].className = lista[k].className.indexOf('pessoa') >= 0 ? 'pessoa' : 'op';
+        b.className = 'pessoa ativo';
+        escolha.pessoa = f.telefone; escolha.hora = '';
+        montarHoras();
+      };
+      caixaPessoa.appendChild(b);
+    });
+  }
+
+  var caixaDias = el('dias');
+  var escolhido = null;
+  function montarDias() {
+    limpar(caixaDias); escolhido = null;
+    var semVaga = (d.servicos || []).length === 0 ? 30 : (escolha.servico ? escolha.servico.duracao_min : 30);
+    dia.forEach(function (iso, i) {
+      var partes = iso.split('-');
+      var data = new Date(Date.UTC(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])));
+      var n = data.getUTCDay();
+      if (!aberto[n]) return;
+      var rotulo = i === 0 ? 'hoje' : (i === 1 ? 'amanhã' : semana[n]);
+      var texto = rotulo + ' ' + partes[2] + '/' + partes[1];
+      var b = botao(texto, i === 0);
+      if (i === 0) { escolhido = iso; b.className = 'op ativo'; }
+      b.onclick = function () {
+        var todos = caixaDias.getElementsByClassName('op');
+        for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+        b.className = 'op ativo'; escolhido = iso; escolha.hora = ''; montarHoras();
+      };
+      caixaDias.appendChild(b);
+    });
+    if (!caixaDias.children.length) {
+      var p = document.createElement('p'); p.className = 'mini';
+      p.textContent = 'Este salão ainda não publicou os dias de atendimento.'; caixaDias.appendChild(p);
+    }
+    montarHoras();
+  }
+
+  var caixaHoras = el('horas');
+  function montarHoras() {
+    limpar(caixaHoras);
+    var duracao = escolha.servico ? escolha.servico.duracao_min : 30;
+    if (!escolhido) return;
+    var p = document.createElement('p'); p.className = 'mini';
+    p.textContent = 'Procurando horários livres...'; caixaHoras.appendChild(p);
+    var url = api + '?action=estab_vagas&slug=' + encodeURIComponent(d.slug) + '&dia=' + escolhido +
+      '&duracao=' + duracao + '&funcionario=' + encodeURIComponent(escolha.pessoa);
+    if (!api) { p.textContent = 'Agenda indisponível agora. Chame no WhatsApp.'; return; }
+    fetch(url).then(function (r) { return r.json(); }).then(function (s) {
+      limpar(caixaHoras);
+      if (s.fechado) { var q = document.createElement('p'); q.className = 'mini';
+        q.textContent = 'Neste dia o salão não atende.'; caixaHoras.appendChild(q); return; }
+      if (!s.vagas || !s.vagas.length) { var w = document.createElement('p'); w.className = 'mini';
+        w.textContent = 'Sem vaga livre neste dia. Tente o próximo.'; caixaHoras.appendChild(w); return; }
+      s.vagas.forEach(function (h) {
+        var b = botao(h, h === escolha.hora);
+        b.onclick = function () {
+          var todos = caixaHoras.getElementsByClassName('op');
+          for (var k = 0; k < todos.length; k++) todos[k].className = 'op';
+          b.className = 'op ativo'; escolha.hora = h; el('gravar').disabled = false;
+        };
+        caixaHoras.appendChild(b);
+      });
+    }).catch(function () {
+      limpar(caixaHoras);
+      var e = document.createElement('p'); e.className = 'mini';
+      e.textContent = 'A agenda não respondeu agora. Tente de novo em instantes.'; caixaHoras.appendChild(e);
+    });
+  }
+
+  var telefone = el('telefone');
+  telefone.addEventListener('input', function () {
+    var n = telefone.value.replace(/D/g, '').slice(0, 11);
+    if (n.length > 10) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
+    else if (n.length > 6) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
+    else if (n.length > 2) telefone.value = '(' + n.slice(0, 2) + ') ' + n.slice(2);
+    else telefone.value = n;
+  });
+
+  el('gravar').onclick = function () {
+    if (!escolha.servico || !escolhido || !escolha.hora) return;
+    var nome = el('nome').value.trim();
+    var fone = telefone.value.replace(/D/g, '');
+    if (nome.length < 2) { aviso('erro', 'Escreva o seu nome.'); return; }
+    if (fone.length < 10) { aviso('erro', 'O telefone precisa ter o DDD.'); return; }
+    if (!api) { aviso('erro', 'A agenda não está ligada neste endereço.'); return; }
+    el('gravar').disabled = true;
+    fetch(api + '?action=estab_marcar', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        slug: d.slug, dia: escolhido, hora: escolha.hora, servico: escolha.servico.nome,
+        duracao: escolha.servico.duracao_min, funcionario: escolha.pessoa, nome: nome, telefone: fone
+      })
+    }).then(function (r) { return r.json(); }).then(function (s) {
+      el('gravar').disabled = false;
+      if (s.ok) {
+        aviso('ok', (s.texto || 'Horário anotado!') + ' O salão recebe o recado na hora.');
+        escolha.hora = ''; montarHoras();
+      } else {
+        aviso('erro', s.erro === 'ocupado' ? 'Alguém pegou este horário agora. Escolha outro.' :
+          (s.erro === 'sem_horario' ? 'Este dia fechou. Escolha outro.' : 'Não consegui anotar. Chame no WhatsApp.'));
+        montarHoras();
+      }
+    }).catch(function () { el('gravar').disabled = false; aviso('erro', 'Sem resposta da agenda. Tente de novo.'); });
+  };
+
+  montarDias();
+})();
+</script>
+</body>
+</html>
