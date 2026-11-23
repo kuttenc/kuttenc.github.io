@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>combo corte + barba — agende seu horário</title>
-<meta name="description" content="Agende horário em combo corte + barba (Estrada do cascalho, 856 - São sebastião - SP, Brasil).">
+<title>Barbearia Novais — agende seu horário</title>
+<meta name="description" content="Agende horário em Barbearia Novais (Estrada do cascalho, 856 - São sebastião - SP, Brasil).">
 <style>
 :root{color-scheme:dark;--fundo:#101820;--card:#18232d;--linha:#2a3a47;--texto:#edf3f6;--apago:#9eafb9;--ouro:#efbd72;--botao:#c66c48;--verde:#327c67;--sombra:0 18px 48px #07101866}
 *{box-sizing:border-box}
@@ -64,7 +64,7 @@ input:focus,select:focus{outline:2px solid #efbd7280;border-color:var(--ouro)}
 </head>
 <body>
 <header class="cabeca">
-  <h1>combo corte + barba</h1>
+  <h1>Barbearia Novais</h1>
   <p>Estrada do cascalho, 856 - São sebastião - SP, Brasil</p>
   <div class="acoes">
     <a href="#agendar">Agendar</a><a href="#cancelar">Cancelar horário</a>
@@ -136,14 +136,14 @@ input:focus,select:focus{outline:2px solid #efbd7280;border-color:var(--ouro)}
   
   
 
-  <p class="pés">combo corte + barba · atualizado em 21/11/2026 às 20:31</p>
+  <p class="pés">Barbearia Novais · atualizado em 23/11/2026 às 18:30</p>
 </main>
-<script id="dados" type="application/json">{"telefone":"5512996470060","nome":"combo corte + barba","slug":"barbearianovais","url":"https://kuttenc.github.io/estabelecimentos/barbearianovais","endereco":"Estrada do cascalho, 856 - São sebastião - SP, Brasil","cidade":"","uf":"","cep":"","telefone_publico":"5512996470060","mostra_barbeiro":true,"aceita_agendamento":true,"aviso_publico":"","servicos":[{"nome":"barba","preco":30,"duracao_min":60,"descricao":""},{"nome":"combo corte + barba + sombrancelha","preco":60,"duracao_min":60,"descricao":""},{"nome":"corte + barba","preco":55,"duracao_min":55,"descricao":""}],"produtos":[],"horarios":[{"dia":1,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":2,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":3,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":4,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":5,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":6,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""}],"pagamentos":[],"funcionarios":[],"fotos":[],"atualizado_em":"21/11/2026 às 20:31"}</script>
+<script id="dados" type="application/json">{"telefone":"5512996470060","nome":"Barbearia Novais","slug":"barbearianovais","url":"https://kuttenc.github.io/estabelecimentos/barbearianovais","endereco":"Estrada do cascalho, 856 - São sebastião - SP, Brasil","cidade":"","uf":"","cep":"","telefone_publico":"5512996470060","mostra_barbeiro":true,"aceita_agendamento":true,"aviso_publico":"","servicos":[{"nome":"barba","preco":30,"duracao_min":60,"descricao":""},{"nome":"combo corte + barba + sombrancelha","preco":60,"duracao_min":60,"descricao":""},{"nome":"corte + barba","preco":55,"duracao_min":55,"descricao":""}],"produtos":[],"horarios":[{"dia":1,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":2,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":3,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":4,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":5,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""},{"dia":6,"abre":"10:00","fecha":"20:00","almoco_inicio":"13:30","almoco_fim":"14:30","intervalo":30,"primeiro":""}],"pagamentos":[],"funcionarios":[],"fotos":[],"atualizado_em":"23/11/2026 às 18:30"}</script>
 <script>
 (function () {
   var d = JSON.parse(document.getElementById('dados').textContent);
   var api = "https://ggufcvrwctieacvbbwim.supabase.co/functions/v1/peixeiro";
-  var dia = ["2026-11-22","2026-11-23","2026-11-24","2026-11-25","2026-11-26","2026-11-27","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04","2026-12-05"];
+  var dia = ["2026-11-24","2026-11-25","2026-11-26","2026-11-27","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04","2026-12-05","2026-12-06","2026-12-07"];
   var semana = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   var aberto = {};
   (d.horarios || []).forEach(function (h) { aberto[h.dia] = h; });
